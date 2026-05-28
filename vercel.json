@@ -28,8 +28,8 @@
   "experimentalServices": {
     "server": {
       "entrypoint": "server",
-      "routePrefix": "/",
-      "buildCommand": "npm run build"
+      "routePrefix": "/socket.io",
+      "buildCommand": "npm run build -w server"
     }
   }
 }
