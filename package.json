@@ -1,0 +1,14 @@
+{
+  "name": "handduel",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": ["frontend", "server"],
+  "scripts": {
+    "dev": "concurrently \"npm run dev -w frontend\" \"npm run dev -w server\"",
+    "build": "npm run build -w frontend && npm run build -w server",
+    "install:all": "npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+frontend/dist/
+server/dist/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+frontend/.env.local
+server/.env.local
+
+# Vite
+frontend/.vite/
+
+# TypeScript
+*.tsbuildinfo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Skills (internal tooling — not needed in repo)
+skills-lock.json
+.agents/
+.claude/

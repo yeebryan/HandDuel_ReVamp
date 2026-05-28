@@ -1,0 +1,829 @@
+/* Hallmark · genre: atmospheric · macrostructure: Workbench · theme: Midnight
+   pre-emit critique: P5 H4 E5 S5 R4 V5
+   fixes: gradient-headline · glassmorphism · bounce-easing · missing-display-font · hex-tokens */
+
+/* ── Token System (OKLCH) ─────────────────────── */
+:root {
+  /* Surfaces — elevation via lightness, not shadow halos */
+  --color-paper:    oklch(7%  0.018 255);
+  --color-paper-2:  oklch(11% 0.022 255);
+  --color-paper-3:  oklch(16% 0.028 255);
+  --color-paper-4:  oklch(21% 0.025 255);
+
+  /* Ink */
+  --color-ink:      oklch(90% 0.006 40);
+  --color-ink-2:    oklch(62% 0.008 40);
+  --color-ink-3:    oklch(38% 0.010 40);
+  --color-ink-glow: oklch(90% 0.006 40 / 0.25);
+
+  /* Borders */
+  --color-border:   oklch(22% 0.020 255);
+  --color-border-2: oklch(32% 0.032 255);
+
+  /* Single warm accent — amber */
+  --color-accent:             oklch(76% 0.14 55);
+  --color-accent-dim:         oklch(48% 0.09 55);
+  --color-accent-hover-border:oklch(76% 0.14 55 / 0.48);
+  --color-accent-glow:        oklch(76% 0.14 55 / 0.20);
+  --color-accent-glow-strong: oklch(76% 0.14 55 / 0.55);
+  --color-shadow-deep:        oklch(0% 0 0 / 0.55);
+
+  /* Game semantic: player colors */
+  --color-p1:   oklch(72% 0.16 218);
+  --color-p2:   oklch(67% 0.18 25);
+
+  /* Outcome */
+  --color-win:       oklch(78% 0.18 145);
+  --color-lose:      oklch(62% 0.20 25);
+  --color-draw:      oklch(78% 0.15 65);
+  --color-win-glow:  oklch(78% 0.18 145 / 0.55);
+  --color-lose-glow: oklch(62% 0.20 25  / 0.45);
+  --color-draw-glow: oklch(78% 0.15 65  / 0.45);
+
+  /* Typography */
+  --font-display: 'Space Grotesk', 'Geist', system-ui, sans-serif;
+  --font-body:    'Inter', system-ui, sans-serif;
+
+  /* Text scale */
+  --text-xs:   0.688rem;
+  --text-sm:   0.812rem;
+  --text-base: 1rem;
+  --text-lg:   1.125rem;
+  --text-xl:   1.375rem;
+  --text-2xl:  1.75rem;
+  --text-3xl:  2.5rem;
+  --text-hero: clamp(2.8rem, 9vw + 0.5rem, 7rem);
+
+  /* Spacing — 4-pt scale */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* Motion — exponential ease-out only */
+  --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in:     cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-micro: 100ms;
+  --dur-short: 220ms;
+  --dur-base:  320ms;
+  --dur-long:  480ms;
+  --dur-spin:  720ms;
+
+  /* Radius */
+  --radius-sm:   6px;
+  --radius-md:   12px;
+  --radius-lg:   20px;
+  --radius-xl:   28px;
+  --radius-full: 9999px;
+
+  /* Glow tints for title/text drop-shadows */
+  --color-loading-title-glow: oklch(76% 0.14 55 / 0.3);
+  --color-title-glow:         oklch(76% 0.14 55 / 0.28);
+  --color-accent-streak-glow: oklch(76% 0.14 55 / 0.5);
+  --color-accent-light:       oklch(82% 0.14 55);
+  --color-btn-ink-dark:       oklch(10% 0.02 55);
+
+  /* Mode-select atmospheric background blooms */
+  --color-bg-bloom-amber: oklch(55% 0.10 55 / 0.11);
+  --color-bg-bloom-rust:  oklch(52% 0.13 22 / 0.09);
+
+  /* Player score glow tints */
+  --color-p1-glow: oklch(72% 0.16 218 / 0.45);
+  --color-p2-glow: oklch(67% 0.18 25  / 0.45);
+
+  /* Gesture-indicator border tints */
+  --color-gesture-rock-border:     oklch(72% 0.16 218 / 0.55);
+  --color-gesture-paper-border:    oklch(78% 0.18 145 / 0.55);
+  --color-gesture-scissors-border: oklch(67% 0.18 25  / 0.55);
+
+  /* Overlay and flash surfaces */
+  --color-modal-overlay: oklch(7%  0.018 255 / 0.88);
+  --color-flash-tint:    oklch(90% 0.006 40  / 0.07);
+}
+
+/* ── Reduced motion ──────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Reset & base ────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+.hidden { display: none !important; }
+
+html, body {
+  overflow: hidden;
+  overflow-x: clip;
+  height: 100vh;
+  width: 100%;
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#game-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+#webcam-p1, #webcam-p2 {
+  position: fixed;
+  width: 1px; height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+#ui-root {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* ── Screens ─────────────────────────────────── */
+.screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: all;
+}
+
+/* ────────────────────────────────────────────── */
+/* LOADING SCREEN                                 */
+/* ────────────────────────────────────────────── */
+#loading-screen {
+  position: absolute;
+  inset: 0;
+  background: var(--color-paper);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+  z-index: 50;
+  pointer-events: all;
+  transition: opacity var(--dur-long) var(--ease-in);
+}
+
+#loading-screen.fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.loading-title {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--color-ink);
+  /* Solid color — no gradient text */
+  filter: drop-shadow(0 0 28px var(--color-loading-title-glow));
+}
+
+.loading-dots {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.loading-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  animation: loading-dot 1.4s var(--ease-in-out) infinite;
+}
+
+.loading-dots span:nth-child(1) { animation-delay: 0.00s; }
+.loading-dots span:nth-child(2) { animation-delay: 0.18s; }
+.loading-dots span:nth-child(3) { animation-delay: 0.36s; }
+.loading-dots span:nth-child(4) { animation-delay: 0.54s; }
+.loading-dots span:nth-child(5) { animation-delay: 0.72s; }
+
+@keyframes loading-dot {
+  0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
+  40%            { opacity: 1;   transform: scale(1); }
+}
+
+.loading-status {
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-ink-3);
+}
+
+/* ────────────────────────────────────────────── */
+/* MODE SELECT                                    */
+/* ────────────────────────────────────────────── */
+#mode-select {
+  gap: var(--space-8);
+  /* Two fixed atmospheric warm blooms — no animation, per genre rules */
+  background:
+    radial-gradient(ellipse 55% 44% at 18% 68%, var(--color-bg-bloom-amber) 0%, transparent 62%),
+    radial-gradient(ellipse 44% 36% at 84% 34%, var(--color-bg-bloom-rust) 0%, transparent 58%);
+}
+
+/* Title: solid ink, weight doing the work — no gradient fill */
+.game-title {
+  font-family: var(--font-display);
+  font-size: var(--text-hero);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+  color: var(--color-ink);
+  filter: drop-shadow(0 0 36px var(--color-title-glow));
+  /* No animation loop — removed infinite pulse */
+}
+
+.game-subtitle {
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--color-ink-3);
+  margin-top: calc(var(--space-2) * -1);
+}
+
+/* Mode cards — elevated solid surfaces, no glass */
+.mode-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-5);
+  max-width: 760px;
+  width: 90%;
+  perspective: 1000px;
+}
+
+.mode-btn {
+  background: var(--color-paper-2);
+  border: 1px solid var(--color-border);
+  border-top-color: var(--color-border-2);
+  border-radius: var(--radius-lg);
+  padding: var(--space-8) var(--space-5);
+  cursor: pointer;
+  transition:
+    transform var(--dur-base) var(--ease-out),
+    background-color var(--dur-short) var(--ease-out),
+    border-color var(--dur-short) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  align-items: center;
+  color: var(--color-ink);
+}
+
+.mode-btn:hover {
+  transform: translateY(-8px) rotateX(-4deg);
+  background-color: var(--color-paper-3);
+  border-color: var(--color-accent-hover-border);
+  /* Warm shadow — directional, not a halo */
+  box-shadow:
+    0 24px 48px -8px var(--color-shadow-deep),
+    0 0 36px -12px var(--color-accent-glow);
+}
+
+/* Per-card 3D tilt — outer cards tilt outward */
+.mode-grid .mode-btn:first-child:hover { transform: translateY(-8px) rotateX(-4deg) rotateY(5deg); }
+.mode-grid .mode-btn:last-child:hover  { transform: translateY(-8px) rotateX(-4deg) rotateY(-5deg); }
+
+.mode-btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
+.mode-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+}
+
+/* SVG icon — colour follows card state via currentColor */
+.mode-svg {
+  width: 48px;
+  height: 48px;
+  color: var(--color-ink-2);
+  transition: color var(--dur-short) var(--ease-out);
+  /* transform driven entirely by Anime.js — no CSS override here */
+}
+.mode-btn:hover  .mode-svg { color: var(--color-accent); }
+.mode-btn:focus-visible .mode-svg { color: var(--color-accent); }
+
+/* Ensure SVG paths start invisible so Anime.js can draw them */
+.mode-svg .icon-a,
+.mode-svg .icon-b,
+.mode-svg .icon-c {
+  stroke-dasharray: 0;   /* overridden by anime.setDashoffset on mount */
+  stroke-dashoffset: 0;
+}
+
+.mode-name {
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--color-ink);
+}
+
+.mode-desc {
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  line-height: 1.6;
+  color: var(--color-ink-2);
+}
+
+/* ────────────────────────────────────────────── */
+/* GAME HUD                                       */
+/* ────────────────────────────────────────────── */
+#game-hud {
+  flex-direction: column;
+  justify-content: space-between;
+  padding: var(--space-5);
+  pointer-events: none;
+}
+
+.hud-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.player-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 110px;
+}
+
+.player-panel.p1 { align-items: flex-start; }
+.player-panel.p2 { align-items: flex-end; }
+
+.player-name {
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-ink-3);
+}
+
+.player-score {
+  font-family: var(--font-display);
+  font-size: var(--text-3xl);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.p1 .player-score {
+  color: var(--color-p1);
+  filter: drop-shadow(0 0 14px var(--color-p1-glow));
+}
+.p2 .player-score {
+  color: var(--color-p2);
+  filter: drop-shadow(0 0 14px var(--color-p2-glow));
+}
+
+/* Score pulse — fires via JS adding .pulse class */
+.player-score.pulse {
+  animation: score-pulse var(--dur-long) var(--ease-out);
+}
+
+@keyframes score-pulse {
+  0%   { transform: scale(1); }
+  28%  { transform: scale(1.45); }
+  100% { transform: scale(1); }
+}
+
+.hud-center-top {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.round-label, .wins-label {
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-ink-3);
+}
+
+/* ────────────────────────────────────────────── */
+/* ARENA CENTER HUD                               */
+/* ────────────────────────────────────────────── */
+.hud-arena {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  pointer-events: none;
+  position: relative;
+}
+
+/* Shockwave ring — sits behind countdown number */
+.countdown-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 72px;
+  height: 72px;
+  margin: -36px 0 0 -36px;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-accent);
+  opacity: 0;
+  transform: scale(0.5);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.countdown-ring.fire {
+  animation: shockwave var(--dur-long) var(--ease-out) forwards;
+}
+
+.countdown-ring.show-phase {
+  border-color: var(--color-accent);
+}
+
+@keyframes shockwave {
+  0%   { transform: scale(0.5); opacity: 0.85; }
+  100% { transform: scale(5.5); opacity: 0; }
+}
+
+/* Countdown number — solid color, weight-forward */
+.countdown-display {
+  font-family: var(--font-display);
+  font-size: clamp(5rem, 20vw, 11rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.05em;
+  color: var(--color-ink);
+  filter: drop-shadow(0 0 48px var(--color-ink-glow));
+  min-height: 1.1em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+  /* entrance driven by Anime.js animateCountdownTick() */
+}
+
+.countdown-display.show-phase {
+  color: var(--color-accent);
+  filter: drop-shadow(0 0 48px var(--color-accent-glow-strong));
+}
+
+/* Result display — separate animations per outcome */
+.result-display {
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 7vw, 3.8rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+/* WIN — colour + glow only; entrance driven by Anime.js animateResultIn('win') */
+.result-display.win {
+  color: var(--color-win);
+  filter: drop-shadow(0 0 28px var(--color-win-glow));
+}
+
+/* LOSE — colour + glow only; entrance driven by Anime.js animateResultIn('lose') */
+.result-display.lose {
+  color: var(--color-lose);
+  filter: drop-shadow(0 0 20px var(--color-lose-glow));
+}
+
+/* DRAW — colour + glow only; entrance driven by Anime.js animateResultIn('draw') */
+.result-display.draw {
+  color: var(--color-draw);
+  filter: drop-shadow(0 0 20px var(--color-draw-glow));
+}
+
+.phase-hint {
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-ink-3);
+}
+
+/* ────────────────────────────────────────────── */
+/* GESTURE INDICATOR                              */
+/* ────────────────────────────────────────────── */
+#gesture-indicator {
+  position: absolute;
+  bottom: var(--space-5);
+  left: 50%;
+  transform: translateX(-50%);
+  /* Elevated solid surface — no glass */
+  background: var(--color-paper-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  padding: var(--space-2) var(--space-5);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  letter-spacing: 0.06em;
+  pointer-events: none;
+  transition:
+    border-color var(--dur-short) var(--ease-out),
+    background-color var(--dur-short) var(--ease-out);
+  white-space: nowrap;
+}
+
+/* Gesture-specific border tints */
+#gesture-indicator.gesture-rock     { border-color: var(--color-gesture-rock-border); }
+#gesture-indicator.gesture-paper    { border-color: var(--color-gesture-paper-border); }
+#gesture-indicator.gesture-scissors { border-color: var(--color-gesture-scissors-border); }
+#gesture-indicator.no-hand          { border-color: var(--color-border); }
+
+/* Status dot */
+#gesture-indicator .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  flex-shrink: 0;
+  animation: pulse-dot 1.6s var(--ease-in-out) infinite;
+  transition: background-color var(--dur-short) var(--ease-out);
+}
+
+#gesture-indicator.gesture-rock     .dot { background: var(--color-p1); }
+#gesture-indicator.gesture-paper    .dot { background: var(--color-win); }
+#gesture-indicator.gesture-scissors .dot { background: var(--color-p2); }
+#gesture-indicator.no-hand          .dot {
+  background: var(--color-ink-3);
+  animation-play-state: paused;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1;   transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.7); }
+}
+
+/* ────────────────────────────────────────────── */
+/* BACK BUTTON                                    */
+/* ────────────────────────────────────────────── */
+.back-btn {
+  position: absolute;
+  top: var(--space-4);
+  left: var(--space-4);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-4);
+  color: var(--color-ink-3);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  pointer-events: all;
+  transition:
+    color var(--dur-micro) var(--ease-out),
+    border-color var(--dur-micro) var(--ease-out),
+    background-color var(--dur-micro) var(--ease-out);
+  letter-spacing: 0.02em;
+}
+
+.back-btn:hover {
+  color: var(--color-ink);
+  border-color: var(--color-border-2);
+  background-color: var(--color-paper-2);
+}
+
+.back-btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* ────────────────────────────────────────────── */
+/* LEADERBOARD                                    */
+/* ────────────────────────────────────────────── */
+#leaderboard {
+  position: absolute;
+  right: var(--space-4);
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--color-paper-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  min-width: 192px;
+  pointer-events: none;
+}
+
+#leaderboard h3 {
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-ink-3);
+  margin-bottom: var(--space-4);
+}
+
+.lb-entry {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-sm);
+}
+.lb-entry:last-child { border-bottom: none; }
+
+.lb-rank {
+  color: var(--color-ink-3);
+  width: 16px;
+  text-align: right;
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.lb-name {
+  flex: 1;
+  font-family: var(--font-body);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lb-streak {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--color-accent);
+  font-size: var(--text-base);
+  font-variant-numeric: tabular-nums;
+  filter: drop-shadow(0 0 8px var(--color-accent-streak-glow));
+}
+
+.lb-entry.current-player .lb-name { color: var(--color-p1); }
+
+/* ────────────────────────────────────────────── */
+/* NAME MODAL                                     */
+/* ────────────────────────────────────────────── */
+#name-modal {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Semi-transparent overlay — depth-communicating use of translucency */
+  background: var(--color-modal-overlay);
+  pointer-events: all;
+}
+
+#name-modal.hidden { display: none; }
+
+.modal-box {
+  background: var(--color-paper-3);
+  border: 1px solid var(--color-border-2);
+  border-radius: var(--radius-xl);
+  padding: var(--space-10);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  align-items: center;
+  width: min(380px, 90vw);
+  animation: modal-in var(--dur-base) var(--ease-out);
+}
+
+@keyframes modal-in {
+  0%   { transform: scale(0.95); opacity: 0; }
+  100% { transform: scale(1);    opacity: 1; }
+}
+
+.modal-box h2 {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-ink);
+}
+
+.modal-box p {
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  color: var(--color-ink-2);
+  text-align: center;
+  line-height: 1.55;
+}
+
+.modal-box input {
+  width: 100%;
+  background: var(--color-paper-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: 600;
+  outline: none;
+  transition: border-color var(--dur-micro) var(--ease-out);
+  text-align: center;
+  letter-spacing: 0.04em;
+}
+
+.modal-box input:focus         { border-color: var(--color-accent); }
+.modal-box input:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+
+.modal-box .submit-btn {
+  width: 100%;
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--radius-full);
+  border: none;
+  background: var(--color-accent);
+  color: var(--color-btn-ink-dark);
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.03em;
+  transition:
+    background-color var(--dur-micro) var(--ease-out),
+    transform var(--dur-micro) var(--ease-out);
+}
+
+.modal-box .submit-btn:hover          { background-color: var(--color-accent-light); transform: translateY(-1px); }
+.modal-box .submit-btn:active         { transform: translateY(0); }
+.modal-box .submit-btn:focus-visible  { outline: 2px solid var(--color-ink); outline-offset: 2px; }
+
+/* ────────────────────────────────────────────── */
+/* CONNECTING OVERLAY                             */
+/* ────────────────────────────────────────────── */
+#connecting-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-5);
+  pointer-events: none;
+}
+
+#connecting-overlay.hidden { display: none; }
+
+.spinner {
+  width: 34px;
+  height: 34px;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: spin var(--dur-spin) linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.connecting-text {
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-ink-3);
+}
+
+/* ────────────────────────────────────────────── */
+/* SCREEN FLASH (gesture lock)                    */
+/* ────────────────────────────────────────────── */
+.flash-overlay {
+  position: absolute;
+  inset: 0;
+  background: var(--color-flash-tint);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 80ms linear;
+}
+
+.flash-overlay.active { opacity: 1; }
