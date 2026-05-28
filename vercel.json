@@ -29,7 +29,7 @@
     "server": {
       "entrypoint": "server",
       "routePrefix": "/socket.io",
-      "buildCommand": "npm run build -w server"
+      "buildCommand": "npm run build"
     }
   }
 }
