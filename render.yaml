@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: handduel-server
+    runtime: node
+    rootDir: server
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: CLIENT_ORIGIN
+        sync: false   # set this in Render dashboard to your Vercel URL
+    healthCheckPath: /health

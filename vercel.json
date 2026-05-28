@@ -8,28 +8,12 @@
     {
       "source": "/(.*)",
       "headers": [
-        {
-          "key": "Cross-Origin-Opener-Policy",
-          "value": "same-origin"
-        },
-        {
-          "key": "Cross-Origin-Embedder-Policy",
-          "value": "require-corp"
-        }
+        { "key": "Cross-Origin-Opener-Policy",  "value": "same-origin" },
+        { "key": "Cross-Origin-Embedder-Policy", "value": "require-corp" }
       ]
     }
   ],
   "rewrites": [
-    {
-      "source": "/((?!assets/).*)",
-      "destination": "/index.html"
-    }
-  ],
-  "experimentalServices": {
-    "server": {
-      "entrypoint": "server",
-      "routePrefix": "/socket.io",
-      "buildCommand": "npm run build"
-    }
-  }
+    { "source": "/((?!assets/).*)", "destination": "/index.html" }
+  ]
 }
