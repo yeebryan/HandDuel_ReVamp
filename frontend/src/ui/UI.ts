@@ -18,6 +18,7 @@ export class UI {
   // Screen elements (created on init)
   private loadingScreen!: HTMLElement;
   private loadingStatus!: HTMLElement;
+  private cameraScreen!: HTMLElement;
   private modeSelect!: HTMLElement;
   private gameHud!: HTMLElement;
   private leaderboard!: HTMLElement;
@@ -62,6 +63,19 @@ export class UI {
   <div class="loading-title">HAND DUEL</div>
   <div class="loading-dots"><span></span><span></span><span></span><span></span><span></span></div>
   <div class="loading-status" id="loading-status">Loading gesture detection…</div>
+</div>
+
+<!-- Camera permission screen (shown after gesture engine loads) -->
+<div id="camera-screen" class="screen hidden">
+  <div class="cam-icon">📷</div>
+  <div class="cam-title">Camera Required</div>
+  <div class="cam-desc">This game reads your hand gestures in real time.<br>Nothing is recorded or transmitted.</div>
+  <button class="cam-btn" id="cam-enable-btn">Enable Camera</button>
+  <div class="cam-error hidden" id="cam-error">
+    <p id="cam-error-text">Camera access was blocked.</p>
+    <p class="cam-error-hint">Click the camera icon in your browser's address bar to reset permission, then try again.</p>
+    <button class="cam-btn cam-btn-retry" id="cam-retry-btn">Try Again</button>
+  </div>
 </div>
 
 <!-- Mode Select -->
@@ -178,6 +192,7 @@ export class UI {
   private cacheRefs(): void {
     this.loadingScreen       = this.root.querySelector('#loading-screen')!;
     this.loadingStatus       = this.root.querySelector('#loading-status')!;
+    this.cameraScreen        = this.root.querySelector('#camera-screen')!;
     this.modeSelect          = this.root.querySelector('#mode-select')!;
     this.gameHud             = this.root.querySelector('#game-hud')!;
     this.leaderboard         = this.root.querySelector('#leaderboard')!;
@@ -222,6 +237,53 @@ export class UI {
 
   setLoadingStatus(text: string): void {
     this.loadingStatus.textContent = text;
+  }
+
+  // ─── Camera permission screen ─────────────────
+
+  /**
+   * Hide the loading screen and show the camera permission screen.
+   * Returns a Promise that resolves when the user grants camera access.
+   * Rejects if they can't be unblocked (e.g. permission permanently denied).
+   * `requestCamera` should call getUserMedia and return the stream or throw.
+   */
+  showCameraScreen(
+    requestCamera: () => Promise<MediaStream>,
+    onGranted: (stream: MediaStream) => void,
+  ): void {
+    animateLoadingOut(this.loadingScreen, () => this.hide(this.loadingScreen));
+    this.show(this.cameraScreen);
+
+    const enableBtn  = this.root.querySelector('#cam-enable-btn') as HTMLButtonElement;
+    const retryBtn   = this.root.querySelector('#cam-retry-btn') as HTMLButtonElement;
+    const errorEl    = this.root.querySelector('#cam-error') as HTMLElement;
+    const errorText  = this.root.querySelector('#cam-error-text') as HTMLElement;
+
+    const attempt = async () => {
+      enableBtn.disabled = true;
+      enableBtn.textContent = 'Requesting…';
+      errorEl.classList.add('hidden');
+      try {
+        const stream = await requestCamera();
+        this.hide(this.cameraScreen);
+        onGranted(stream);
+      } catch (err: unknown) {
+        enableBtn.disabled = false;
+        enableBtn.textContent = 'Enable Camera';
+        errorEl.classList.remove('hidden');
+        const name = (err as { name?: string })?.name ?? '';
+        if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+          errorText.textContent = 'Camera access was blocked.';
+        } else if (name === 'NotFoundError') {
+          errorText.textContent = 'No camera found on this device.';
+        } else {
+          errorText.textContent = `Camera error: ${name || String(err)}`;
+        }
+      }
+    };
+
+    enableBtn.addEventListener('click', attempt);
+    retryBtn.addEventListener('click', attempt);
   }
 
   // ─── Screen switching ─────────────────────────

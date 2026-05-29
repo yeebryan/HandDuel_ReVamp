@@ -271,6 +271,106 @@ body {
 }
 
 /* ────────────────────────────────────────────── */
+/* CAMERA PERMISSION SCREEN                       */
+/* ────────────────────────────────────────────── */
+#camera-screen {
+  gap: var(--space-6);
+  background: var(--color-paper);
+  z-index: 50;
+  pointer-events: all;
+  padding: var(--space-10);
+  text-align: center;
+}
+
+.cam-icon {
+  font-size: 3.5rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 20px oklch(72% 0.16 218 / 0.5));
+}
+
+.cam-title {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-ink);
+}
+
+.cam-desc {
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  color: var(--color-ink-2);
+  line-height: 1.7;
+  max-width: 340px;
+}
+
+.cam-btn {
+  background: rgba(62, 255, 216, 0.12);
+  border: 1px solid rgba(62, 255, 216, 0.35);
+  border-radius: var(--radius-full);
+  padding: var(--space-3) var(--space-10);
+  color: rgba(62, 255, 216, 0.95);
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-short) var(--ease-out),
+    border-color var(--dur-short) var(--ease-out),
+    transform var(--dur-micro) var(--ease-out);
+}
+.cam-btn:hover:not(:disabled) {
+  background: rgba(62, 255, 216, 0.2);
+  border-color: rgba(62, 255, 216, 0.6);
+  transform: translateY(-1px);
+}
+.cam-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.cam-btn:focus-visible {
+  outline: 2px solid rgba(62, 255, 216, 0.7);
+  outline-offset: 3px;
+}
+
+.cam-btn-retry {
+  margin-top: var(--space-2);
+  font-size: var(--text-sm);
+  padding: var(--space-2) var(--space-6);
+  background: transparent;
+  border-color: rgba(62, 255, 216, 0.2);
+  color: rgba(62, 255, 216, 0.6);
+}
+
+.cam-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  background: oklch(11% 0.022 25 / 0.8);
+  border: 1px solid oklch(62% 0.20 25 / 0.3);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5) var(--space-8);
+  max-width: 380px;
+  animation: modal-in var(--dur-base) var(--ease-out);
+}
+.cam-error.hidden { display: none; }
+
+.cam-error p {
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  color: oklch(70% 0.15 25);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.cam-error-hint {
+  color: var(--color-ink-2) !important;
+  font-size: var(--text-xs) !important;
+}
+
+/* ────────────────────────────────────────────── */
 /* MODE SELECT                                    */
 /* ────────────────────────────────────────────── */
 #mode-select {

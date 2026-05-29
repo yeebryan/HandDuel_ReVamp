@@ -30,17 +30,7 @@ export class App {
     this.ui.onBack(() => this.returnToMenu());
     this.ui.initModeSelectHover();
 
-    // Start webcam (P1)
-    this.ui.setLoadingStatus('Starting webcam…');
-    const camOk = await this.startWebcam(this.p1Video);
-    if (!camOk) {
-      this.ui.setLoadingStatus(
-        '⚠ Camera blocked — grant permission then refresh the page.',
-      );
-      return; // don't proceed; user must grant camera and reload
-    }
-
-    // Boot MediaPipe
+    // Boot MediaPipe first (no camera needed yet — user hasn't clicked anything)
     this.ui.setLoadingStatus('Loading gesture detection…');
     this.detector = new GestureDetector();
     try {
@@ -53,8 +43,19 @@ export class App {
       return;
     }
 
-    this.ui.hideLoading();
-    setTimeout(() => this.ui.showModeSelect(), 420);
+    // Show camera permission screen — only calls getUserMedia when user clicks
+    this.ui.showCameraScreen(
+      () => navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false,
+      }),
+      (stream) => {
+        // Camera granted — attach stream and proceed to mode select
+        this.p1Video.srcObject = stream;
+        this.p1Video.play().catch(console.warn);
+        setTimeout(() => this.ui.showModeSelect(), 300);
+      },
+    );
   }
 
   private async startMode(mode: GameMode): Promise<void> {
@@ -230,23 +231,4 @@ export class App {
     this.ui.showModeSelect();
   }
 
-  /** Returns true if the webcam started successfully. */
-  private async startWebcam(video: HTMLVideoElement): Promise<boolean> {
-    if (!navigator.mediaDevices?.getUserMedia) {
-      console.warn('getUserMedia not available — page must be served over HTTPS or localhost.');
-      return false;
-    }
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
-        audio: false,
-      });
-      video.srcObject = stream;
-      await video.play();
-      return true;
-    } catch (err) {
-      console.warn('Webcam unavailable:', err);
-      return false;
-    }
-  }
 }
