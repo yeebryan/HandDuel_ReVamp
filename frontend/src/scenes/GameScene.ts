@@ -14,11 +14,6 @@ export class GameScene {
   private camera!: THREE.PerspectiveCamera;
   private composer!: EffectComposer;
 
-  private p1VideoTex: THREE.VideoTexture | null = null;
-  private p2VideoTex: THREE.VideoTexture | null = null;
-  private p1CamMesh!: THREE.Mesh;
-  private p2CamMesh!: THREE.Mesh;
-
   private p1Gesture: THREE.Object3D | null = null;
   private p2Gesture: THREE.Object3D | null = null;
 
@@ -39,15 +34,13 @@ export class GameScene {
   private winnerSide: RoundWinner = 0;
   private pulseT = 0;
 
-  init(canvas: HTMLCanvasElement, p1Video: HTMLVideoElement): void {
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  init(canvas: HTMLCanvasElement, _p1Video?: HTMLVideoElement): void {
+    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.2;
+    this.renderer.setClearColor(0x000000, 0);
 
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x03030d);
     this.scene.fog = new THREE.FogExp2(0x03030d, 0.04);
 
     this.camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 80);
@@ -66,7 +59,6 @@ export class GameScene {
 
     this.buildArena();
     this.buildParticles();
-    this.buildPlayerSlots(p1Video);
     this.buildLighting();
 
     window.addEventListener('resize', this.onResize);
@@ -121,48 +113,6 @@ export class GameScene {
     this.scene.add(this.particles);
   }
 
-  // ─── Webcam planes + borders ──────────────────
-  private buildPlayerSlots(p1Video: HTMLVideoElement): void {
-    const w = 3.5, h = 2.6;
-    const camGeo = new THREE.PlaneGeometry(w, h);
-
-    // P1 — left, mirrored webcam
-    this.p1VideoTex = new THREE.VideoTexture(p1Video);
-    this.p1VideoTex.colorSpace = THREE.SRGBColorSpace;
-    this.p1VideoTex.repeat.x = -1;
-    this.p1VideoTex.offset.x = 1;
-
-    const p1Mat = new THREE.MeshBasicMaterial({ map: this.p1VideoTex });
-    this.p1CamMesh = new THREE.Mesh(camGeo, p1Mat);
-    this.p1CamMesh.position.set(-(ARENA_W / 2), 0.5, 0);
-    this.scene.add(this.p1CamMesh);
-
-    // P2 — right, placeholder (dark)
-    const p2Mat = new THREE.MeshBasicMaterial({ color: 0x0a0a1a });
-    this.p2CamMesh = new THREE.Mesh(camGeo, p2Mat);
-    this.p2CamMesh.position.set(ARENA_W / 2, 0.5, 0);
-    this.scene.add(this.p2CamMesh);
-
-    // Neon border frames
-    this.addFrameBorder(-(ARENA_W / 2), 0.5, w, h, P1_COLOR);
-    this.addFrameBorder(ARENA_W / 2, 0.5, w, h, P2_COLOR);
-  }
-
-  private addFrameBorder(x: number, y: number, w: number, h: number, color: number): void {
-    const hw = w / 2, hh = h / 2;
-    const pts = [
-      new THREE.Vector3(-hw, -hh, 0.01),
-      new THREE.Vector3(hw, -hh, 0.01),
-      new THREE.Vector3(hw, hh, 0.01),
-      new THREE.Vector3(-hw, hh, 0.01),
-      new THREE.Vector3(-hw, -hh, 0.01),
-    ];
-    const geo = new THREE.BufferGeometry().setFromPoints(pts);
-    const line = new THREE.Line(geo, new THREE.LineBasicMaterial({ color }));
-    line.position.set(x, y, 0);
-    this.scene.add(line);
-  }
-
   private buildLighting(): void {
     this.scene.add(new THREE.AmbientLight(0x111133, 0.8));
 
@@ -181,23 +131,8 @@ export class GameScene {
 
   // ─── Public API ───────────────────────────────
 
-  /** Assign a second webcam stream to the P2 slot */
-  setP2Video(video: HTMLVideoElement): void {
-    const tex = new THREE.VideoTexture(video);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    tex.repeat.x = -1;
-    tex.offset.x = 1;
-    this.p2VideoTex = tex;
-    (this.p2CamMesh.material as THREE.MeshBasicMaterial).map = tex;
-    (this.p2CamMesh.material as THREE.MeshBasicMaterial).needsUpdate = true;
-  }
-
-  resetP2Video(): void {
-    this.p2VideoTex = null;
-    (this.p2CamMesh.material as THREE.MeshBasicMaterial).map = null;
-    (this.p2CamMesh.material as THREE.MeshBasicMaterial).color.setHex(0x0a0a1a);
-    (this.p2CamMesh.material as THREE.MeshBasicMaterial).needsUpdate = true;
-  }
+  setP2Video(_video: HTMLVideoElement): void { /* webcam planes removed */ }
+  resetP2Video(): void { /* webcam planes removed */ }
 
   showGestures(p1: Gesture, p2: Gesture): void {
     this.clearGestures();
@@ -287,9 +222,6 @@ export class GameScene {
       this.shakeIntensity = 0;
       this.camera.position.copy(this.cameraBasePos);
     }
-
-    if (this.p1VideoTex) this.p1VideoTex.needsUpdate = true;
-    if (this.p2VideoTex) this.p2VideoTex.needsUpdate = true;
 
     this.composer.render();
   }

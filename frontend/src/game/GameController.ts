@@ -108,6 +108,14 @@ export class GameController extends Emitter<Events> {
     if (p2 !== 'none') this.lockedP2 = p2;
   }
 
+  /** Hold-to-confirm: immediately resolve with a confirmed gesture before showTimer fires */
+  confirmGesture(p1: Gesture): void {
+    if (this.phase !== 'show') return;
+    if (this.showTimer) { clearTimeout(this.showTimer); this.showTimer = null; }
+    this.lockedP1 = p1;
+    this.resolveRound();
+  }
+
   /** For online mode — externally supply pre-determined results */
   injectResult(p1: Gesture, p2: Gesture): void {
     this.lockedP1 = p1;

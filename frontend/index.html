@@ -10,10 +10,16 @@
     <link rel="stylesheet" href="/src/styles/main.css" />
   </head>
   <body>
+    <!-- Fullscreen webcam — camera-as-hero background -->
+    <video id="webcam-p1" autoplay muted playsinline></video>
+
+    <!-- Landmark overlay — MediaPipe skeleton drawn here -->
+    <canvas id="landmark-canvas"></canvas>
+
+    <!-- Three.js scene — transparent bg, gesture meshes + particles -->
     <canvas id="game-canvas"></canvas>
 
-    <!-- Hidden video elements for webcam feeds -->
-    <video id="webcam-p1" autoplay muted playsinline></video>
+    <!-- Hidden remote video (online PvP only) -->
     <video id="webcam-p2" autoplay muted playsinline></video>
 
     <!-- UI Overlay -->

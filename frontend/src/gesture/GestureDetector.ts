@@ -1,9 +1,19 @@
 import {
   HandLandmarker,
-  FilesetResolver,
   type HandLandmarkerResult,
+  FilesetResolver,
 } from '@mediapipe/tasks-vision';
 import type { Gesture, HandResult } from '../types.js';
+
+// Finger bone connections for drawing the hand skeleton
+const HAND_CONNECTIONS: [number, number][] = [
+  [0,1],[1,2],[2,3],[3,4],       // thumb
+  [0,5],[5,6],[6,7],[7,8],       // index
+  [0,9],[9,10],[10,11],[11,12],  // middle
+  [0,13],[13,14],[14,15],[15,16],// ring
+  [0,17],[17,18],[18,19],[19,20],// pinky
+  [5,9],[9,13],[13,17],          // palm knuckles
+];
 
 const WASM_CDN = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/wasm';
 const MODEL_URL =
@@ -100,8 +110,10 @@ export class GestureDetector {
     try {
       raw = this.landmarker.detectForVideo(video, ts);
     } catch {
+      this.lastRaw = null;
       return [];
     }
+    this.lastRaw = raw;
 
     const results: HandResult[] = [];
 
@@ -131,6 +143,51 @@ export class GestureDetector {
     }
     return hands.find((h) => h.handedness === side)?.gesture ?? 'none';
   }
+
+  /**
+   * Draw hand skeleton on a canvas overlay.
+   * `raw` comes from the last detectForVideo call (stored each frame).
+   * `mirrored` should match the CSS transform on the video element.
+   */
+  drawLandmarks(canvas: HTMLCanvasElement, raw: HandLandmarkerResult | null, mirrored = true): void {
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    canvas.width  = canvas.offsetWidth  * window.devicePixelRatio;
+    canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    ctx.clearRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
+
+    if (!raw || raw.landmarks.length === 0) return;
+
+    const W = canvas.offsetWidth;
+    const H = canvas.offsetHeight;
+    const mx = (x: number) => mirrored ? (1 - x) * W : x * W;
+    const my = (y: number) => y * H;
+
+    for (const lms of raw.landmarks) {
+      // Connections
+      ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+      ctx.lineWidth   = 1.5;
+      ctx.beginPath();
+      for (const [a, b] of HAND_CONNECTIONS) {
+        ctx.moveTo(mx(lms[a].x), my(lms[a].y));
+        ctx.lineTo(mx(lms[b].x), my(lms[b].y));
+      }
+      ctx.stroke();
+
+      // Landmark dots
+      for (const lm of lms) {
+        ctx.beginPath();
+        ctx.arc(mx(lm.x), my(lm.y), 3, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,200,80,0.9)';
+        ctx.fill();
+      }
+    }
+  }
+
+  /** The last raw result, stored by detect() for drawLandmarks(). */
+  lastRaw: HandLandmarkerResult | null = null;
 
   dispose() {
     this.landmarker?.close();

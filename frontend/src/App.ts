@@ -11,16 +11,18 @@ export class App {
   private detector!: GestureDetector;
   private ui!: UI;
   private p1Video!: HTMLVideoElement;
+  private landmarkCanvas!: HTMLCanvasElement;
   private activeMode: PvCMode | PvPLocalMode | PvPOnlineMode | null = null;
   private roundCount = 0;
 
   async init(): Promise<void> {
     const canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
-    this.p1Video = document.getElementById('webcam-p1') as HTMLVideoElement;
+    this.p1Video       = document.getElementById('webcam-p1') as HTMLVideoElement;
+    this.landmarkCanvas = document.getElementById('landmark-canvas') as HTMLCanvasElement;
 
-    // Boot Three.js scene
+    // Boot Three.js scene (no video arg needed — webcam is now the page background)
     this.scene = new GameScene();
-    this.scene.init(canvas, this.p1Video);
+    this.scene.init(canvas);
 
     // Boot UI — loading screen shown by default until init completes
     this.ui = new UI('ui-root');
@@ -64,7 +66,7 @@ export class App {
         this.scene, this.detector, this.p1Video,
         {
           onPhase: (phase, cd) => this.handlePhase(phase, cd),
-          onResult: (_p1g, _p2g, winner) => {
+          onResult: (p1g, p2g, winner) => {
             this.roundCount++;
             this.ui.setRound(this.roundCount + 1);
             this.ui.flashScreen();
@@ -72,11 +74,16 @@ export class App {
             else if (winner === 2) this.ui.pulseScore(2);
             const label = winner === 0 ? 'DRAW' : winner === 1 ? 'YOU WIN!' : 'CPU WINS';
             const type  = winner === 0 ? 'draw' : winner === 1 ? 'win' : 'lose';
+            this.ui.showRevealPanel(p1g, p2g, winner);
             setTimeout(() => this.ui.showResult(label, type), 700);
           },
           onScore: (p1, p2) => this.ui.setScore(p1, p2),
           onMatchOver: (winner, p1, p2) => this.handleMatchOver(`${winner === 1 ? 'YOU WIN' : 'CPU WINS'} ${p1}–${p2}!`),
-          onGestureFeed: (g) => this.ui.updateGesture(g),
+          onGestureFeed: (g) => {
+            this.ui.updateGesture(g);
+            this.detector.drawLandmarks(this.landmarkCanvas, this.detector.lastRaw);
+          },
+          onHoldProgress: (progress, gesture) => this.ui.updateHoldRing(progress, gesture),
         }
       );
       (this.activeMode as PvCMode).start();
@@ -100,7 +107,10 @@ export class App {
           },
           onScore: (p1, p2) => this.ui.setScore(p1, p2),
           onMatchOver: (winner, p1, p2) => this.handleMatchOver(`PLAYER ${winner} WINS ${p1}–${p2}!`),
-          onGestureFeed: (p1g, p2g) => this.ui.updateGesture(p1g, p2g),
+          onGestureFeed: (p1g, p2g) => {
+            this.ui.updateGesture(p1g, p2g);
+            this.detector.drawLandmarks(this.landmarkCanvas, this.detector.lastRaw);
+          },
         }
       );
       (this.activeMode as PvPLocalMode).start();
@@ -149,7 +159,10 @@ export class App {
             this.ui.setPhaseHint('Opponent disconnected');
             setTimeout(() => this.returnToMenu(), 2000);
           },
-          onGestureFeed: (g) => this.ui.updateGesture(g),
+          onGestureFeed: (g) => {
+            this.ui.updateGesture(g);
+            this.detector.drawLandmarks(this.landmarkCanvas, this.detector.lastRaw);
+          },
         },
         'competition',
       );
@@ -200,6 +213,10 @@ export class App {
     this.roundCount = 0;
     this.scene.clearGestures();
     this.scene.resetP2Video();
+    // Clear landmark canvas
+    const ctx = this.landmarkCanvas.getContext('2d');
+    ctx?.clearRect(0, 0, this.landmarkCanvas.width, this.landmarkCanvas.height);
+    this.ui.updateHoldRing(0, null);
     this.ui.hideLeaderboard();
     this.ui.hideConnecting();
     this.ui.showModeSelect();

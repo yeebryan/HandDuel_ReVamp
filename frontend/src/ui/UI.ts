@@ -37,6 +37,14 @@ export class UI {
   private phaseHintEl!: HTMLElement;
   private gestureNameEl!: HTMLElement;
   private gestureP2El!: HTMLElement;
+  private holdRingWrap!: HTMLElement;
+  private holdRingFill!: SVGCircleElement;
+  private holdRingEmoji!: HTMLElement;
+  private revealPanel!: HTMLElement;
+  private revealP1Slot!: HTMLElement;
+  private revealP2Slot!: HTMLElement;
+  private revealP1Emoji!: HTMLElement;
+  private revealP2Emoji!: HTMLElement;
 
   constructor(rootId = 'ui-root') {
     this.root = document.getElementById(rootId)!;
@@ -100,7 +108,28 @@ export class UI {
     <div class="phase-hint" id="phase-hint">Get ready…</div>
   </div>
 
-  <div style="height:48px"></div>
+  <!-- Hold-to-confirm ring (bottom center, visible during SHOW phase) -->
+  <div id="hold-ring-wrap">
+    <svg class="hold-ring-svg" viewBox="0 0 80 80">
+      <circle cx="40" cy="40" r="34" class="hold-ring-track"/>
+      <circle cx="40" cy="40" r="34" class="hold-ring-fill" id="hold-ring-fill"/>
+    </svg>
+    <span class="hold-ring-emoji" id="hold-ring-emoji">✊</span>
+  </div>
+
+  <!-- Side-by-side gesture reveal -->
+  <div id="reveal-panel">
+    <div class="reveal-slot" id="reveal-p1-slot">
+      <span class="reveal-emoji" id="reveal-p1-emoji">✊</span>
+      <span class="reveal-label" id="reveal-p1-label">YOU</span>
+    </div>
+    <div class="reveal-vs">VS</div>
+    <div class="reveal-slot" id="reveal-p2-slot">
+      <span class="reveal-emoji" id="reveal-p2-emoji">🤖</span>
+      <span class="reveal-label">CPU</span>
+    </div>
+  </div>
+
   <button class="back-btn" id="back-btn">← Menu</button>
 </div>
 
@@ -158,6 +187,14 @@ export class UI {
     this.phaseHintEl         = this.root.querySelector('#phase-hint')!;
     this.gestureNameEl       = this.root.querySelector('#gesture-name')!;
     this.gestureP2El         = this.root.querySelector('#gesture-p2')!;
+    this.holdRingWrap        = this.root.querySelector('#hold-ring-wrap')!;
+    this.holdRingFill        = this.root.querySelector('#hold-ring-fill')!;
+    this.holdRingEmoji       = this.root.querySelector('#hold-ring-emoji')!;
+    this.revealPanel         = this.root.querySelector('#reveal-panel')!;
+    this.revealP1Slot        = this.root.querySelector('#reveal-p1-slot')!;
+    this.revealP2Slot        = this.root.querySelector('#reveal-p2-slot')!;
+    this.revealP1Emoji       = this.root.querySelector('#reveal-p1-emoji')!;
+    this.revealP2Emoji       = this.root.querySelector('#reveal-p2-emoji')!;
   }
 
   // ─── Loading screen ───────────────────────────
@@ -273,6 +310,7 @@ export class UI {
 
   hideResult(): void {
     this.resultEl.classList.add('hidden');
+    this.hideRevealPanel();
   }
 
   setPhaseHint(text: string): void {
@@ -358,6 +396,42 @@ export class UI {
   }
 
   hideConnecting(): void { this.hide(this.connectingOverlay); }
+
+  // ─── Hold-to-confirm ring ─────────────────────
+
+  /** progress: 0–1. gesture: current held gesture or null */
+  updateHoldRing(progress: number, gesture: Gesture | null): void {
+    const CIRCUMFERENCE = 2 * Math.PI * 34; // r=34
+    if (gesture && progress > 0) {
+      this.holdRingWrap.classList.add('visible');
+      this.holdRingEmoji.textContent = GESTURE_EMOJI[gesture];
+      this.holdRingFill.style.strokeDashoffset = String(CIRCUMFERENCE * (1 - progress));
+    } else {
+      this.holdRingWrap.classList.remove('visible');
+      this.holdRingFill.style.strokeDashoffset = String(CIRCUMFERENCE);
+    }
+  }
+
+  // ─── Side-by-side reveal panel ────────────────
+
+  showRevealPanel(p1g: Gesture, p2g: Gesture, winner: 0 | 1 | 2, p2Label = 'CPU'): void {
+    this.revealP1Emoji.textContent = GESTURE_EMOJI[p1g] ?? '?';
+    this.revealP2Emoji.textContent = GESTURE_EMOJI[p2g] ?? '?';
+    (this.root.querySelector('#reveal-p1-label') as HTMLElement).textContent =
+      this.p1NameEl.textContent ?? 'YOU';
+    (this.revealP2Slot.querySelector('.reveal-label') as HTMLElement).textContent = p2Label;
+
+    this.revealP1Slot.classList.toggle('winner', winner === 1);
+    this.revealP1Slot.classList.toggle('loser',  winner === 2);
+    this.revealP2Slot.classList.toggle('winner', winner === 2);
+    this.revealP2Slot.classList.toggle('loser',  winner === 1);
+
+    this.revealPanel.classList.add('visible');
+  }
+
+  hideRevealPanel(): void {
+    this.revealPanel.classList.remove('visible');
+  }
 
   // ─── Private helpers ─────────────────────────
 

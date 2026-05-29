@@ -3,18 +3,24 @@ import { GestureDetector } from '../gesture/GestureDetector.js';
 import { GameScene } from '../scenes/GameScene.js';
 import type { Gesture, RoundWinner } from '../types.js';
 
+const HOLD_DURATION_MS = 1400; // ms of stable gesture required to confirm
+
 export interface PvCHandlers {
   onPhase: (phase: string, countdown?: number) => void;
   onResult: (p1g: Gesture, p2g: Gesture, winner: RoundWinner) => void;
   onScore: (p1: number, p2: number) => void;
   onMatchOver: (winner: 1 | 2, p1wins: number, p2wins: number) => void;
   onGestureFeed: (g: Gesture) => void;
+  onHoldProgress?: (progress: number, gesture: Gesture | null) => void;
 }
 
 export class PvCMode {
   private ctrl: GameController;
   private raf: number | null = null;
   private lastTime = 0;
+  private holdGesture: Gesture = 'none';
+  private holdMs = 0;
+  private confirmed = false;
 
   constructor(
     private scene: GameScene,
@@ -26,8 +32,17 @@ export class PvCMode {
     this.bindEvents();
   }
 
+  private resetHold(): void {
+    this.holdGesture = 'none';
+    this.holdMs = 0;
+    this.confirmed = false;
+    this.handlers.onHoldProgress?.(0, null);
+  }
+
   private bindEvents(): void {
     this.ctrl.on('phaseChange', (phase) => {
+      if (phase === 'show') this.resetHold();
+      if (phase !== 'show') this.resetHold();
       this.handlers.onPhase(phase);
     });
 
@@ -55,19 +70,38 @@ export class PvCMode {
   }
 
   start(): void {
+    this.resetHold();
     this.loop(0);
     this.ctrl.startRound();
   }
 
   private loop = (ts: number): void => {
-    const dt = Math.min((ts - this.lastTime) / 1000, 0.1);
+    const dtMs = Math.min(ts - this.lastTime, 100);
+    const dt   = dtMs / 1000;
     this.lastTime = ts;
 
-    // Feed current gesture into the controller
-    const hands = this.detector.detect(this.video);
-    const p1Gesture = this.detector.snapshot(hands, 'any');
-    // CPU gesture is random (locked at SHOW phase internally)
-    this.ctrl.feedGestures(p1Gesture, 'none');
+    const hands      = this.detector.detect(this.video);
+    const p1Gesture  = this.detector.snapshot(hands, 'any');
+    const inShowPhase = this.ctrl.getPhase() === 'show';
+
+    if (inShowPhase && !this.confirmed) {
+      if (p1Gesture !== 'none' && p1Gesture === this.holdGesture) {
+        this.holdMs += dtMs;
+      } else {
+        this.holdGesture = p1Gesture;
+        this.holdMs = 0;
+      }
+
+      const progress = Math.min(this.holdMs / HOLD_DURATION_MS, 1);
+      this.handlers.onHoldProgress?.(progress, p1Gesture !== 'none' ? p1Gesture : null);
+
+      if (this.holdMs >= HOLD_DURATION_MS && p1Gesture !== 'none') {
+        this.confirmed = true;
+        this.handlers.onHoldProgress?.(1, p1Gesture);
+        this.ctrl.confirmGesture(p1Gesture);
+      }
+    }
+
     this.handlers.onGestureFeed(p1Gesture);
 
     this.scene.update(dt);
