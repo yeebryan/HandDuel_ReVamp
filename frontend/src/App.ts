@@ -45,10 +45,16 @@ export class App {
 
     // Show camera permission screen — only calls getUserMedia when user clicks
     this.ui.showCameraScreen(
-      () => navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
-        audio: false,
-      }),
+      () => {
+        if (!navigator.mediaDevices?.getUserMedia) {
+          return Promise.reject(new DOMException('getUserMedia not supported', 'NotSupportedError'));
+        }
+        // Use plain `video: true` — no facingMode constraint.
+        // Desktop cameras often have no facing mode; adding that constraint
+        // causes NotFoundError even when a camera exists.
+        // CSS scaleX(-1) on the video element handles the mirror flip.
+        return navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      },
       (stream) => {
         // Camera granted — attach stream and proceed to mode select
         this.p1Video.srcObject = stream;

@@ -274,8 +274,12 @@ export class UI {
         const name = (err as { name?: string })?.name ?? '';
         if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
           errorText.textContent = 'Camera access was blocked.';
-        } else if (name === 'NotFoundError') {
-          errorText.textContent = 'No camera found on this device.';
+        } else if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
+          errorText.textContent = 'Camera not found — make sure nothing else is using it.';
+        } else if (name === 'NotSupportedError') {
+          errorText.textContent = 'Camera API not available. Try Chrome or Firefox over HTTPS.';
+        } else if (name === 'NotReadableError' || name === 'TrackStartError') {
+          errorText.textContent = 'Camera is in use by another app — close it and try again.';
         } else {
           errorText.textContent = `Camera error: ${name || String(err)}`;
         }
