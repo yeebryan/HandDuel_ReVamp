@@ -20,7 +20,6 @@ export class UI {
   private loadingStatus!: HTMLElement;
   private modeSelect!: HTMLElement;
   private gameHud!: HTMLElement;
-  private gestureIndicator!: HTMLElement;
   private leaderboard!: HTMLElement;
   private nameModal!: HTMLElement;
   private connectingOverlay!: HTMLElement;
@@ -39,12 +38,16 @@ export class UI {
   private gestureP2El!: HTMLElement;
   private holdRingWrap!: HTMLElement;
   private holdRingFill!: SVGCircleElement;
-  private holdRingEmoji!: HTMLElement;
   private revealPanel!: HTMLElement;
   private revealP1Slot!: HTMLElement;
   private revealP2Slot!: HTMLElement;
   private revealP1Emoji!: HTMLElement;
   private revealP2Emoji!: HTMLElement;
+  // New HUD refs
+  private cpuPanelEl!: HTMLElement;
+  private cpuEmojiEl!: HTMLElement;
+  private gesturePillEl!: HTMLElement;
+  private hintTextEl!: HTMLElement;
 
   constructor(rootId = 'ui-root') {
     this.root = document.getElementById(rootId)!;
@@ -86,38 +89,36 @@ export class UI {
 
 <!-- Game HUD -->
 <div id="game-hud" class="screen hidden">
-  <div class="hud-top">
-    <div class="player-panel p1">
-      <div class="player-name" id="p1-name">YOU</div>
-      <div class="player-score p1" id="p1-score">0</div>
+
+  <!-- Top bar: back button + scores + round -->
+  <div class="hud-topbar">
+    <button class="back-btn" id="back-btn">← Menu</button>
+    <div class="hud-score-block">
+      <span class="hud-score-name" id="p1-name">YOU</span>
+      <span class="hud-score-val p1" id="p1-score">0</span>
     </div>
-    <div class="hud-center-top">
-      <div class="round-label" id="round-display">ROUND 1</div>
-      <div class="wins-label" id="wins-label">First to 2 wins</div>
-    </div>
-    <div class="player-panel p2" style="align-items:flex-end">
-      <div class="player-name" id="p2-name">CPU</div>
-      <div class="player-score p2" id="p2-score">0</div>
+    <div class="hud-round" id="round-display">ROUND 1</div>
+    <div class="hud-score-block reverse">
+      <span class="hud-score-val p2" id="p2-score">0</span>
+      <span class="hud-score-name" id="p2-name">CPU</span>
     </div>
   </div>
 
+  <!-- CPU panel: floating top-right, shows ❓ → cycling → revealed gesture -->
+  <div id="cpu-panel">
+    <div id="cpu-emoji">❓</div>
+    <div class="cpu-label">CPU</div>
+  </div>
+
+  <!-- Arena: large countdown + result text -->
   <div class="hud-arena">
     <div class="countdown-ring" id="countdown-ring"></div>
     <div class="countdown-display" id="countdown-display"></div>
     <div class="result-display hidden" id="result-display"></div>
-    <div class="phase-hint" id="phase-hint">Get ready…</div>
+    <div class="phase-hint" id="phase-hint"></div>
   </div>
 
-  <!-- Hold-to-confirm ring (bottom center, visible during SHOW phase) -->
-  <div id="hold-ring-wrap">
-    <svg class="hold-ring-svg" viewBox="0 0 80 80">
-      <circle cx="40" cy="40" r="34" class="hold-ring-track"/>
-      <circle cx="40" cy="40" r="34" class="hold-ring-fill" id="hold-ring-fill"/>
-    </svg>
-    <span class="hold-ring-emoji" id="hold-ring-emoji">✊</span>
-  </div>
-
-  <!-- Side-by-side gesture reveal -->
+  <!-- Reveal panel: side-by-side after each round -->
   <div id="reveal-panel">
     <div class="reveal-slot" id="reveal-p1-slot">
       <span class="reveal-emoji" id="reveal-p1-emoji">✊</span>
@@ -126,18 +127,25 @@ export class UI {
     <div class="reveal-vs">VS</div>
     <div class="reveal-slot" id="reveal-p2-slot">
       <span class="reveal-emoji" id="reveal-p2-emoji">🤖</span>
-      <span class="reveal-label">CPU</span>
+      <span class="reveal-label" id="reveal-p2-label">CPU</span>
     </div>
   </div>
 
-  <button class="back-btn" id="back-btn">← Menu</button>
-</div>
+  <!-- Bottom bar: hold ring + gesture pill + status hint -->
+  <div class="hud-bottombar">
+    <div id="hold-ring-wrap">
+      <svg class="hold-ring-svg" viewBox="0 0 50 50">
+        <circle cx="25" cy="25" r="22" class="hold-ring-track"/>
+        <circle cx="25" cy="25" r="22" class="hold-ring-fill" id="hold-ring-fill"/>
+      </svg>
+    </div>
+    <div id="gesture-pill">
+      <span id="gesture-name">–</span>
+      <span id="gesture-p2" style="display:none"></span>
+    </div>
+    <div class="hint-text" id="hint-text">No hand detected</div>
+  </div>
 
-<!-- Gesture indicator (bottom center) -->
-<div id="gesture-indicator" class="hidden">
-  <div class="dot"></div>
-  <span id="gesture-name">–</span>
-  <span id="gesture-p2" style="display:none">  |  P2: <span id="gesture-p2-val">–</span></span>
 </div>
 
 <!-- Leaderboard (online competition) -->
@@ -172,7 +180,6 @@ export class UI {
     this.loadingStatus       = this.root.querySelector('#loading-status')!;
     this.modeSelect          = this.root.querySelector('#mode-select')!;
     this.gameHud             = this.root.querySelector('#game-hud')!;
-    this.gestureIndicator    = this.root.querySelector('#gesture-indicator')!;
     this.leaderboard         = this.root.querySelector('#leaderboard')!;
     this.nameModal           = this.root.querySelector('#name-modal')!;
     this.connectingOverlay   = this.root.querySelector('#connecting-overlay')!;
@@ -189,12 +196,15 @@ export class UI {
     this.gestureP2El         = this.root.querySelector('#gesture-p2')!;
     this.holdRingWrap        = this.root.querySelector('#hold-ring-wrap')!;
     this.holdRingFill        = this.root.querySelector('#hold-ring-fill')!;
-    this.holdRingEmoji       = this.root.querySelector('#hold-ring-emoji')!;
     this.revealPanel         = this.root.querySelector('#reveal-panel')!;
     this.revealP1Slot        = this.root.querySelector('#reveal-p1-slot')!;
     this.revealP2Slot        = this.root.querySelector('#reveal-p2-slot')!;
     this.revealP1Emoji       = this.root.querySelector('#reveal-p1-emoji')!;
     this.revealP2Emoji       = this.root.querySelector('#reveal-p2-emoji')!;
+    this.cpuPanelEl          = this.root.querySelector('#cpu-panel')!;
+    this.cpuEmojiEl          = this.root.querySelector('#cpu-emoji')!;
+    this.gesturePillEl       = this.root.querySelector('#gesture-pill')!;
+    this.hintTextEl          = this.root.querySelector('#hint-text')!;
   }
 
   // ─── Loading screen ───────────────────────────
@@ -236,10 +246,12 @@ export class UI {
     this.show(this.gameHud);
     this.p1NameEl.textContent = p1Name;
     this.p2NameEl.textContent = p2Name;
-    this.showGestureIndicator();
     this.setCountdown('');
     this.hideResult();
-    this.setPhaseHint('Get ready…');
+    this.setPhaseHint('');
+    this.setCPUGesture('❓', '');
+    this.setGestureHint('No hand detected');
+    this.updateHoldRing(0, null);
   }
 
   onModeSelect(cb: (mode: GameMode) => void): void {
@@ -265,7 +277,7 @@ export class UI {
   pulseScore(player: 1 | 2): void {
     const el = player === 1 ? this.p1ScoreEl : this.p2ScoreEl;
     el.classList.remove('pulse');
-    el.offsetHeight; // reflow
+    void el.offsetHeight; // reflow
     el.classList.add('pulse');
     setTimeout(() => el.classList.remove('pulse'), 600);
   }
@@ -322,30 +334,33 @@ export class UI {
     setTimeout(() => this.flashOverlay.classList.remove('active'), 120);
   }
 
-  // ─── Gesture indicator ────────────────────────
+  // ─── Gesture indicator (bottom pill) ─────────
 
-  showGestureIndicator(): void { this.gestureIndicator.classList.remove('hidden'); }
-  hideGestureIndicator(): void { this.gestureIndicator.classList.add('hidden'); }
+  showGestureIndicator(): void { /* gesture pill is always visible in bottombar */ }
+  hideGestureIndicator(): void { /* no-op */ }
 
   updateGesture(gesture: Gesture, p2Gesture?: Gesture): void {
-    const el = this.gestureIndicator;
-    this.gestureNameEl.textContent =
-      gesture === 'none' ? '–' : `${GESTURE_EMOJI[gesture]} ${gesture}`;
+    if (gesture === 'none') {
+      this.gestureNameEl.textContent = '–';
+      this.gesturePillEl.classList.remove('active');
+      this.setGestureHint('No hand detected');
+    } else {
+      this.gestureNameEl.textContent = `${GESTURE_EMOJI[gesture]} ${gesture.toUpperCase()}`;
+      this.gesturePillEl.classList.add('active');
+    }
 
     if (p2Gesture !== undefined) {
       this.gestureP2El.style.display = 'inline';
-      const p2ValEl = this.root.querySelector('#gesture-p2-val')!;
-      p2ValEl.textContent = p2Gesture === 'none' ? '–' : `${GESTURE_EMOJI[p2Gesture]} ${p2Gesture}`;
+      this.gestureP2El.textContent = p2Gesture === 'none'
+        ? ''
+        : `  ·  P2: ${GESTURE_EMOJI[p2Gesture]} ${p2Gesture.toUpperCase()}`;
     } else {
       this.gestureP2El.style.display = 'none';
     }
+  }
 
-    el.classList.remove('no-hand', 'gesture-rock', 'gesture-paper', 'gesture-scissors');
-    if (gesture === 'none') {
-      el.classList.add('no-hand');
-    } else {
-      el.classList.add(`gesture-${gesture}`);
-    }
+  setGestureHint(text: string): void {
+    this.hintTextEl.textContent = text;
   }
 
   // ─── Leaderboard ─────────────────────────────
@@ -399,17 +414,27 @@ export class UI {
 
   // ─── Hold-to-confirm ring ─────────────────────
 
+  private static readonly HOLD_CIRC = 2 * Math.PI * 22; // r=22 → 138.23
+
   /** progress: 0–1. gesture: current held gesture or null */
   updateHoldRing(progress: number, gesture: Gesture | null): void {
-    const CIRCUMFERENCE = 2 * Math.PI * 34; // r=34
     if (gesture && progress > 0) {
       this.holdRingWrap.classList.add('visible');
-      this.holdRingEmoji.textContent = GESTURE_EMOJI[gesture];
-      this.holdRingFill.style.strokeDashoffset = String(CIRCUMFERENCE * (1 - progress));
+      this.holdRingFill.style.strokeDashoffset =
+        String(UI.HOLD_CIRC * (1 - progress));
+      this.setGestureHint(progress >= 1 ? 'Locked in!' : 'Hold to confirm…');
     } else {
       this.holdRingWrap.classList.remove('visible');
-      this.holdRingFill.style.strokeDashoffset = String(CIRCUMFERENCE);
+      this.holdRingFill.style.strokeDashoffset = String(UI.HOLD_CIRC);
     }
+  }
+
+  // ─── CPU panel ───────────────────────────────
+
+  /** emoji: the gesture emoji or '❓'. state: '' | 'win' | 'lose' | 'draw' */
+  setCPUGesture(emoji: string, state: '' | 'win' | 'lose' | 'draw'): void {
+    this.cpuEmojiEl.textContent = emoji;
+    this.cpuPanelEl.className = state ? `cpu-${state}` : '';
   }
 
   // ─── Side-by-side reveal panel ────────────────
@@ -419,7 +444,7 @@ export class UI {
     this.revealP2Emoji.textContent = GESTURE_EMOJI[p2g] ?? '?';
     (this.root.querySelector('#reveal-p1-label') as HTMLElement).textContent =
       this.p1NameEl.textContent ?? 'YOU';
-    (this.revealP2Slot.querySelector('.reveal-label') as HTMLElement).textContent = p2Label;
+    (this.root.querySelector('#reveal-p2-label') as HTMLElement).textContent = p2Label;
 
     this.revealP1Slot.classList.toggle('winner', winner === 1);
     this.revealP1Slot.classList.toggle('loser',  winner === 2);

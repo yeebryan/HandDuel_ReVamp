@@ -72,10 +72,14 @@ export class App {
             this.ui.flashScreen();
             if (winner === 1) this.ui.pulseScore(1);
             else if (winner === 2) this.ui.pulseScore(2);
+            // Reveal CPU gesture in the CPU panel with win/lose/draw state
+            const EMOJI: Record<string, string> = { rock:'✊', paper:'🖐️', scissors:'✌️', none:'❓' };
+            const cpuState = winner === 0 ? 'draw' : winner === 1 ? 'lose' : 'win';
+            this.ui.setCPUGesture(EMOJI[p2g] ?? '❓', cpuState);
+            this.ui.showRevealPanel(p1g, p2g, winner);
             const label = winner === 0 ? 'DRAW' : winner === 1 ? 'YOU WIN!' : 'CPU WINS';
             const type  = winner === 0 ? 'draw' : winner === 1 ? 'win' : 'lose';
-            this.ui.showRevealPanel(p1g, p2g, winner);
-            setTimeout(() => this.ui.showResult(label, type), 700);
+            setTimeout(() => this.ui.showResult(label, type), 600);
           },
           onScore: (p1, p2) => this.ui.setScore(p1, p2),
           onMatchOver: (winner, p1, p2) => this.handleMatchOver(`${winner === 1 ? 'YOU WIN' : 'CPU WINS'} ${p1}–${p2}!`),
@@ -83,7 +87,10 @@ export class App {
             this.ui.updateGesture(g);
             this.detector.drawLandmarks(this.landmarkCanvas, this.detector.lastRaw);
           },
-          onHoldProgress: (progress, gesture) => this.ui.updateHoldRing(progress, gesture),
+          onHoldProgress: (progress, gesture) => {
+            this.ui.updateHoldRing(progress, gesture);
+          },
+          onCPUEmoji: (emoji) => this.ui.setCPUGesture(emoji, ''),
         }
       );
       (this.activeMode as PvCMode).start();
@@ -217,6 +224,7 @@ export class App {
     const ctx = this.landmarkCanvas.getContext('2d');
     ctx?.clearRect(0, 0, this.landmarkCanvas.width, this.landmarkCanvas.height);
     this.ui.updateHoldRing(0, null);
+    this.ui.setCPUGesture('❓', '');
     this.ui.hideLeaderboard();
     this.ui.hideConnecting();
     this.ui.showModeSelect();

@@ -166,9 +166,9 @@ export class GestureDetector {
     const my = (y: number) => y * H;
 
     for (const lms of raw.landmarks) {
-      // Connections
-      ctx.strokeStyle = 'rgba(255,255,255,0.35)';
-      ctx.lineWidth   = 1.5;
+      // Bone connections — cyan at 40% opacity
+      ctx.strokeStyle = 'rgba(62,255,216,0.4)';
+      ctx.lineWidth   = 2;
       ctx.beginPath();
       for (const [a, b] of HAND_CONNECTIONS) {
         ctx.moveTo(mx(lms[a].x), my(lms[a].y));
@@ -176,12 +176,16 @@ export class GestureDetector {
       }
       ctx.stroke();
 
-      // Landmark dots
+      // Landmark dots — dark fill + cyan stroke, matching reference style
       for (const lm of lms) {
+        const x = mx(lm.x), y = my(lm.y);
         ctx.beginPath();
-        ctx.arc(mx(lm.x), my(lm.y), 3, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(255,200,80,0.9)';
+        ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.fillStyle   = 'rgba(8,8,16,0.7)';
         ctx.fill();
+        ctx.strokeStyle = 'rgba(62,255,216,0.9)';
+        ctx.lineWidth   = 1.5;
+        ctx.stroke();
       }
     }
   }

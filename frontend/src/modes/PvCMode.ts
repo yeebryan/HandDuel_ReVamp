@@ -4,6 +4,8 @@ import { GameScene } from '../scenes/GameScene.js';
 import type { Gesture, RoundWinner } from '../types.js';
 
 const HOLD_DURATION_MS = 1400; // ms of stable gesture required to confirm
+const CPU_CYCLE_EMOJIS = ['✊', '🖐️', '✌️'];
+const CPU_CYCLE_MS = 180;
 
 export interface PvCHandlers {
   onPhase: (phase: string, countdown?: number) => void;
@@ -12,6 +14,7 @@ export interface PvCHandlers {
   onMatchOver: (winner: 1 | 2, p1wins: number, p2wins: number) => void;
   onGestureFeed: (g: Gesture) => void;
   onHoldProgress?: (progress: number, gesture: Gesture | null) => void;
+  onCPUEmoji?: (emoji: string) => void;
 }
 
 export class PvCMode {
@@ -21,6 +24,8 @@ export class PvCMode {
   private holdGesture: Gesture = 'none';
   private holdMs = 0;
   private confirmed = false;
+  private cpuCycleTimer: ReturnType<typeof setInterval> | null = null;
+  private cpuCycleIdx = 0;
 
   constructor(
     private scene: GameScene,
@@ -39,10 +44,28 @@ export class PvCMode {
     this.handlers.onHoldProgress?.(0, null);
   }
 
+  private startCPUCycle(): void {
+    this.stopCPUCycle();
+    this.cpuCycleIdx = 0;
+    this.handlers.onCPUEmoji?.(CPU_CYCLE_EMOJIS[0]);
+    this.cpuCycleTimer = setInterval(() => {
+      this.cpuCycleIdx = (this.cpuCycleIdx + 1) % CPU_CYCLE_EMOJIS.length;
+      this.handlers.onCPUEmoji?.(CPU_CYCLE_EMOJIS[this.cpuCycleIdx]);
+    }, CPU_CYCLE_MS);
+  }
+
+  private stopCPUCycle(): void {
+    if (this.cpuCycleTimer) { clearInterval(this.cpuCycleTimer); this.cpuCycleTimer = null; }
+  }
+
   private bindEvents(): void {
     this.ctrl.on('phaseChange', (phase) => {
-      if (phase === 'show') this.resetHold();
-      if (phase !== 'show') this.resetHold();
+      if (phase === 'countdown') this.startCPUCycle();
+      if (phase === 'show' || phase === 'reveal' || phase === 'idle') {
+        this.stopCPUCycle();
+        if (phase === 'show') this.resetHold();
+        if (phase === 'idle') this.handlers.onCPUEmoji?.('❓');
+      }
       this.handlers.onPhase(phase);
     });
 
@@ -109,10 +132,8 @@ export class PvCMode {
   };
 
   stop(): void {
-    if (this.raf !== null) {
-      cancelAnimationFrame(this.raf);
-      this.raf = null;
-    }
+    if (this.raf !== null) { cancelAnimationFrame(this.raf); this.raf = null; }
+    this.stopCPUCycle();
     this.ctrl.destroy();
     this.scene.clearGestures();
   }
