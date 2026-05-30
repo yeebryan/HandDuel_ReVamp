@@ -375,10 +375,13 @@ body {
 /* ────────────────────────────────────────────── */
 #mode-select {
   gap: var(--space-8);
-  /* Two fixed atmospheric warm blooms — no animation, per genre rules */
+  /* Semi-transparent so the live webcam shows through behind the menu */
   background:
     radial-gradient(ellipse 55% 44% at 18% 68%, var(--color-bg-bloom-amber) 0%, transparent 62%),
-    radial-gradient(ellipse 44% 36% at 84% 34%, var(--color-bg-bloom-rust) 0%, transparent 58%);
+    radial-gradient(ellipse 44% 36% at 84% 34%, var(--color-bg-bloom-rust) 0%, transparent 58%),
+    oklch(7% 0.018 255 / 0.82);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
 }
 
 /* Title: solid ink, weight doing the work — no gradient fill */
@@ -1072,4 +1075,113 @@ body {
   font-weight: 800;
   color: var(--color-ink-3);
   letter-spacing: -0.02em;
+}
+
+/* ────────────────────────────────────────────── */
+/* MOBILE / RESPONSIVE                            */
+/* ────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  /* Mode select grid → single column */
+  .mode-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    max-width: 340px;
+  }
+
+  .mode-card {
+    padding: var(--space-4) var(--space-5);
+  }
+
+  .mode-card .icon { font-size: 1.8rem; }
+  .mode-card .title { font-size: var(--text-base); }
+  .mode-card .desc  { font-size: var(--text-xs); }
+
+  /* Topbar — tighter on phones */
+  .hud-topbar {
+    height: 52px;
+    padding: 0 var(--space-3);
+    font-size: var(--text-sm);
+  }
+
+  .hud-score-val {
+    font-size: 1.5rem;
+  }
+
+  .hud-round {
+    font-size: var(--text-xs);
+    letter-spacing: 0.06em;
+  }
+
+  .back-btn {
+    font-size: var(--text-xs);
+    padding: var(--space-1) var(--space-3);
+  }
+
+  /* CPU panel — smaller, stay top-right */
+  #cpu-panel {
+    top: 58px;
+    right: 10px;
+    width: 82px;
+    padding: var(--space-2) var(--space-3);
+  }
+
+  #cpu-emoji { font-size: 2rem; }
+
+  /* Bottom bar */
+  .hud-bottombar {
+    height: 62px;
+    padding: 0 var(--space-3);
+    gap: var(--space-3);
+  }
+
+  #hold-ring-wrap {
+    width: 40px;
+    height: 40px;
+  }
+
+  #gesture-pill {
+    font-size: var(--text-sm);
+    padding: var(--space-1) var(--space-4);
+  }
+
+  .hint-text {
+    font-size: 0.6rem;
+  }
+
+  /* Countdown */
+  .countdown-display {
+    font-size: 4rem;
+  }
+
+  /* Result overlay */
+  .result-display {
+    font-size: var(--text-xl);
+    padding: var(--space-3) var(--space-6);
+  }
+
+  /* Reveal panel */
+  #reveal-panel {
+    gap: var(--space-3);
+    bottom: 70px;
+  }
+
+  .reveal-slot {
+    padding: var(--space-3) var(--space-4);
+    min-width: 80px;
+  }
+
+  .reveal-emoji { font-size: 2.2rem; }
+  .reveal-vs    { font-size: var(--text-base); }
+
+  /* Camera permission screen */
+  .cam-icon  { font-size: 3rem; }
+  .cam-title { font-size: var(--text-xl); }
+  .cam-desc  { font-size: var(--text-sm); }
+  .cam-btn   { padding: var(--space-3) var(--space-7); font-size: var(--text-sm); }
+
+  /* Mode select title */
+  #mode-select h1 {
+    font-size: var(--text-2xl);
+  }
 }
