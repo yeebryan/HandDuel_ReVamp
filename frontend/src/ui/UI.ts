@@ -413,6 +413,10 @@ export class UI {
     } else {
       this.gestureNameEl.textContent = `${GESTURE_EMOJI[gesture]} ${gesture.toUpperCase()}`;
       this.gesturePillEl.classList.add('active');
+      // Clear the stale "No hand detected" hint; hold ring will set its own hint when active
+      if (this.hintTextEl.textContent === 'No hand detected') {
+        this.hintTextEl.textContent = '';
+      }
     }
 
     if (p2Gesture !== undefined) {
