@@ -1,7 +1,4 @@
 import * as THREE from 'three';
-import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import type { Gesture, RoundWinner } from '../types.js';
 
 const P1_COLOR = 0x0088ff;
@@ -12,7 +9,6 @@ export class GameScene {
   private renderer!: THREE.WebGLRenderer;
   private scene!: THREE.Scene;
   private camera!: THREE.PerspectiveCamera;
-  private composer!: EffectComposer;
 
   private p1Gesture: THREE.Object3D | null = null;
   private p2Gesture: THREE.Object3D | null = null;
@@ -46,16 +42,6 @@ export class GameScene {
     this.camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 80);
     this.camera.position.copy(this.cameraBasePos);
     this.camera.lookAt(0, 0, 0);
-
-    // Post-processing
-    this.composer = new EffectComposer(this.renderer);
-    this.composer.addPass(new RenderPass(this.scene, this.camera));
-    this.composer.addPass(
-      new UnrealBloomPass(
-        new THREE.Vector2(window.innerWidth, window.innerHeight),
-        1.0, 0.3, 0.75
-      )
-    );
 
     this.buildArena();
     this.buildParticles();
@@ -223,7 +209,7 @@ export class GameScene {
       this.camera.position.copy(this.cameraBasePos);
     }
 
-    this.composer.render();
+    this.renderer.render(this.scene, this.camera);
   }
 
   // ─── Helpers ─────────────────────────────────
@@ -307,7 +293,6 @@ export class GameScene {
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(w, h);
-    this.composer.setSize(w, h);
   };
 
   dispose(): void {
