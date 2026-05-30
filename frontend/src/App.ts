@@ -74,22 +74,21 @@ export class App {
         {
           onPhase: (phase, cd) => this.handlePhase(phase, cd),
           onResult: (p1g, p2g, winner) => {
-            this.roundCount++;
-            this.ui.setRound(this.roundCount + 1);
             this.ui.flashScreen();
             if (winner === 1) this.ui.pulseScore(1);
             else if (winner === 2) this.ui.pulseScore(2);
-            // Reveal CPU gesture in the CPU panel with win/lose/draw state
             const EMOJI: Record<string, string> = { rock:'✊', paper:'🖐️', scissors:'✌️', none:'❓' };
             const cpuState = winner === 0 ? 'draw' : winner === 1 ? 'lose' : 'win';
             this.ui.setCPUGesture(EMOJI[p2g] ?? '❓', cpuState);
             this.ui.showRevealPanel(p1g, p2g, winner);
             const label = winner === 0 ? 'DRAW' : winner === 1 ? 'YOU WIN!' : 'CPU WINS';
             const type  = winner === 0 ? 'draw' : winner === 1 ? 'win' : 'lose';
-            setTimeout(() => this.ui.showResult(label, type), 600);
+            setTimeout(() => this.ui.showResult(label, type), 400);
           },
-          onScore: (p1, p2) => this.ui.setScore(p1, p2),
-          onMatchOver: (winner, p1, p2) => this.handleMatchOver(`${winner === 1 ? 'YOU WIN' : 'CPU WINS'} ${p1}–${p2}!`),
+          onScore: (p1, p2, round) => {
+            this.ui.setScore(p1, p2);
+            this.ui.setRound(round);
+          },
           onGestureFeed: (g) => {
             this.ui.updateGesture(g);
             this.detector.drawLandmarks(this.landmarkCanvas, this.detector.lastRaw);
@@ -110,8 +109,6 @@ export class App {
         {
           onPhase: (phase, cd) => this.handlePhase(phase, cd),
           onResult: (_p1g, _p2g, winner) => {
-            this.roundCount++;
-            this.ui.setRound(this.roundCount + 1);
             this.ui.flashScreen();
             if (winner === 1) this.ui.pulseScore(1);
             else if (winner === 2) this.ui.pulseScore(2);
@@ -119,7 +116,7 @@ export class App {
             const type  = winner === 0 ? 'draw' : 'win';
             setTimeout(() => this.ui.showResult(label, type), 700);
           },
-          onScore: (p1, p2) => this.ui.setScore(p1, p2),
+          onScore: (p1, p2, round) => { this.ui.setScore(p1, p2); this.ui.setRound(round); },
           onMatchOver: (winner, p1, p2) => this.handleMatchOver(`PLAYER ${winner} WINS ${p1}–${p2}!`),
           onGestureFeed: (p1g, p2g) => {
             this.ui.updateGesture(p1g, p2g);
@@ -200,8 +197,8 @@ export class App {
         this.ui.setPhaseHint('');
         break;
       case 'show':
-        this.ui.setCountdown(0);
-        this.ui.setPhaseHint('Show your hand!');
+        this.ui.setCountdown(0); // triggers "SHOOT!" display
+        this.ui.setPhaseHint('');
         break;
       case 'reveal':
         // Don't hide result here — result will be shown ~600ms after this fires
@@ -209,10 +206,10 @@ export class App {
         this.ui.setPhaseHint('');
         break;
       case 'idle':
-        // After result timer expires — clear result and prompt player to hold
+        // After result — clear and prompt player to hold to play again
         this.ui.hideResult();
         this.ui.setCountdown('');
-        this.ui.setPhaseHint('Hold your gesture to play!');
+        this.ui.setPhaseHint('Hold a gesture to play again!');
         break;
     }
   }

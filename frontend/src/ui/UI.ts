@@ -358,7 +358,7 @@ export class UI {
     const isShow = v === 0 || v === '0';
 
     if (isShow) {
-      el.textContent = 'SHOW!';
+      el.textContent = 'SHOOT!';
       el.classList.add('show-phase');
     } else {
       el.textContent = v === '' ? '' : String(v);
