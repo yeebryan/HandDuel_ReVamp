@@ -6,7 +6,7 @@ import type { Gesture, RoundWinner } from '../types.js';
 export interface PvPLocalHandlers {
   onPhase: (phase: string, countdown?: number) => void;
   onResult: (p1g: Gesture, p2g: Gesture, winner: RoundWinner) => void;
-  onScore: (p1: number, p2: number) => void;
+  onScore: (p1: number, p2: number, round: number) => void;
   onMatchOver: (winner: 1 | 2, p1wins: number, p2wins: number) => void;
   onGestureFeed: (p1g: Gesture, p2g: Gesture) => void;
 }
@@ -27,7 +27,7 @@ export class PvPLocalMode {
     private video: HTMLVideoElement,
     private handlers: PvPLocalHandlers,
   ) {
-    this.ctrl = new GameController({ winsNeeded: 2 });
+    this.ctrl = new GameController({ winsNeeded: 2, countdownInterval: 750 });
     this.bindEvents();
   }
 
@@ -55,8 +55,8 @@ export class PvPLocalMode {
       this.handlers.onResult(p1Gesture, p2Gesture, winner);
     });
 
-    this.ctrl.on('scoreUpdate', ({ p1, p2 }) => {
-      this.handlers.onScore(p1, p2);
+    this.ctrl.on('scoreUpdate', ({ p1, p2, round }) => {
+      this.handlers.onScore(p1, p2, round);
     });
 
     this.ctrl.on('matchOver', ({ winner, p1Wins, p2Wins }) => {
