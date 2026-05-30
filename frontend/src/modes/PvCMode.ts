@@ -63,7 +63,7 @@ export class PvCMode {
       if (phase === 'countdown') this.startCPUCycle();
       if (phase === 'show' || phase === 'reveal' || phase === 'idle') {
         this.stopCPUCycle();
-        if (phase === 'show') this.resetHold();
+        this.resetHold(); // always reset ring when leaving show (or on idle/reveal)
         if (phase === 'idle') this.handlers.onCPUEmoji?.('❓');
       }
       this.handlers.onPhase(phase);
