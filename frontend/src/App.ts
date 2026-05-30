@@ -193,9 +193,9 @@ export class App {
   }
 
   private handlePhase(phase: string, countdown?: number): void {
-    this.ui.hideResult();
     switch (phase) {
       case 'countdown':
+        this.ui.hideResult();
         this.ui.setCountdown(countdown ?? '');
         this.ui.setPhaseHint('');
         break;
@@ -204,12 +204,15 @@ export class App {
         this.ui.setPhaseHint('Show your hand!');
         break;
       case 'reveal':
+        // Don't hide result here — result will be shown ~600ms after this fires
         this.ui.setCountdown('');
         this.ui.setPhaseHint('');
         break;
       case 'idle':
+        // After result timer expires — clear result and prompt player to hold
+        this.ui.hideResult();
         this.ui.setCountdown('');
-        this.ui.setPhaseHint('');
+        this.ui.setPhaseHint('Hold your gesture to play!');
         break;
     }
   }

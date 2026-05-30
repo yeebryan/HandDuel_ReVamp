@@ -31,8 +31,14 @@ export class PvPLocalMode {
     this.bindEvents();
   }
 
+  private matchOver = false;
+
   private bindEvents(): void {
     this.ctrl.on('phaseChange', (phase) => {
+      // Auto-start next round when idle (PvP local doesn't use hold-to-play)
+      if (phase === 'idle' && !this.matchOver) {
+        setTimeout(() => this.ctrl.startRound(), 800);
+      }
       this.handlers.onPhase(phase);
     });
 
@@ -54,6 +60,7 @@ export class PvPLocalMode {
     });
 
     this.ctrl.on('matchOver', ({ winner, p1Wins, p2Wins }) => {
+      this.matchOver = true;
       this.scene.clearGestures();
       this.handlers.onMatchOver(winner, p1Wins, p2Wins);
     });

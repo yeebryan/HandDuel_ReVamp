@@ -71,6 +71,14 @@ export class GameController extends Emitter<Events> {
     this.setPhase('idle');
   }
 
+  /** Begin in idle — used by PvC so the hold ring is the initial round trigger */
+  startWaiting(): void {
+    this.clearTimers();
+    this.lockedP1 = 'none';
+    this.lockedP2 = 'none';
+    this.setPhase('idle');
+  }
+
   startRound(): void {
     this.clearTimers();
     this.lockedP1 = 'none';
@@ -149,8 +157,22 @@ export class GameController extends Emitter<Events> {
       this.emit('matchOver', { winner, p1Wins: this.p1Score, p2Wins: this.p2Score });
       this.setPhase('idle');
     } else {
-      this.startRound();
+      // Go idle so PvC mode can use hold-to-play to start next round.
+      // PvP modes that want auto-start can call startRound() from their matchOver/result handler.
+      this.setPhase('idle');
     }
+  }
+
+  /**
+   * PvC: player confirms their gesture via hold ring while idle.
+   * Immediately resolves a round — no countdown or show window.
+   */
+  playWithGesture(p1: Gesture): void {
+    if (this.phase !== 'idle') return;
+    this.clearTimers();
+    this.lockedP1 = p1;
+    this.lockedP2 = this.randomGesture();
+    this.resolveRound();
   }
 
   private setPhase(p: GamePhase): void {

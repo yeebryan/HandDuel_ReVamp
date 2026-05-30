@@ -3,7 +3,7 @@ import { GestureDetector } from '../gesture/GestureDetector.js';
 import { GameScene } from '../scenes/GameScene.js';
 import type { Gesture, RoundWinner } from '../types.js';
 
-const HOLD_DURATION_MS = 1400; // ms of stable gesture required to confirm
+const HOLD_DURATION_MS = 1400; // ms of stable gesture required to play
 const CPU_CYCLE_EMOJIS = ['✊', '🖐️', '✌️'];
 const CPU_CYCLE_MS = 180;
 
@@ -60,13 +60,19 @@ export class PvCMode {
 
   private bindEvents(): void {
     this.ctrl.on('phaseChange', (phase) => {
-      if (phase === 'countdown') this.startCPUCycle();
-      if (phase === 'show' || phase === 'reveal' || phase === 'idle') {
+      if (phase === 'idle') {
+        // Between rounds: CPU cycles while player holds to play
+        this.resetHold();
+        this.startCPUCycle();
+        this.handlers.onPhase('idle');
+      } else if (phase === 'reveal') {
+        // Round just resolved — stop cycle, clear ring
         this.stopCPUCycle();
-        this.resetHold(); // always reset ring when leaving show (or on idle/reveal)
-        if (phase === 'idle') this.handlers.onCPUEmoji?.('❓');
+        this.resetHold();
+        this.handlers.onPhase('reveal');
+      } else {
+        this.handlers.onPhase(phase);
       }
-      this.handlers.onPhase(phase);
     });
 
     this.ctrl.on('countdown', (v) => {
@@ -87,6 +93,7 @@ export class PvCMode {
     });
 
     this.ctrl.on('matchOver', ({ winner, p1Wins, p2Wins }) => {
+      this.stopCPUCycle();
       this.scene.clearGestures();
       this.handlers.onMatchOver(winner, p1Wins, p2Wins);
     });
@@ -95,7 +102,8 @@ export class PvCMode {
   start(): void {
     this.resetHold();
     this.loop(0);
-    this.ctrl.startRound();
+    // Go idle immediately — phaseChange handler will start CPU cycle + prompt hold-to-play
+    this.ctrl.startWaiting();
   }
 
   private loop = (ts: number): void => {
@@ -103,29 +111,31 @@ export class PvCMode {
     const dt   = dtMs / 1000;
     this.lastTime = ts;
 
-    const hands      = this.detector.detect(this.video);
-    const p1Gesture  = this.detector.snapshot(hands, 'any');
-    const inShowPhase = this.ctrl.getPhase() === 'show';
+    const hands     = this.detector.detect(this.video);
+    const gesture   = this.detector.snapshot(hands, 'any');
+    const inIdle    = this.ctrl.getPhase() === 'idle';
 
-    if (inShowPhase && !this.confirmed) {
-      if (p1Gesture !== 'none' && p1Gesture === this.holdGesture) {
+    // Hold-to-play is active during idle (between rounds)
+    if (inIdle && !this.confirmed) {
+      if (gesture !== 'none' && gesture === this.holdGesture) {
         this.holdMs += dtMs;
       } else {
-        this.holdGesture = p1Gesture;
+        this.holdGesture = gesture;
         this.holdMs = 0;
       }
 
       const progress = Math.min(this.holdMs / HOLD_DURATION_MS, 1);
-      this.handlers.onHoldProgress?.(progress, p1Gesture !== 'none' ? p1Gesture : null);
+      this.handlers.onHoldProgress?.(progress, gesture !== 'none' ? gesture : null);
 
-      if (this.holdMs >= HOLD_DURATION_MS && p1Gesture !== 'none') {
+      if (this.holdMs >= HOLD_DURATION_MS && gesture !== 'none') {
         this.confirmed = true;
-        this.handlers.onHoldProgress?.(1, p1Gesture);
-        this.ctrl.confirmGesture(p1Gesture);
+        this.handlers.onHoldProgress?.(1, gesture);
+        this.stopCPUCycle();
+        this.ctrl.playWithGesture(gesture);
       }
     }
 
-    this.handlers.onGestureFeed(p1Gesture);
+    this.handlers.onGestureFeed(gesture);
 
     this.scene.update(dt);
     this.raf = requestAnimationFrame(this.loop);
