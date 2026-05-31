@@ -4,14 +4,27 @@ import { Server } from 'socket.io';
 import cors from 'cors';
 import { GameRoom } from './GameRoom.js';
 import { Leaderboard } from './Leaderboard.js';
+import { PvCLeaderboard } from './PvCLeaderboard.js';
 
 const PORT = Number(process.env['PORT'] ?? 3001);
 const CLIENT_ORIGIN = process.env['CLIENT_ORIGIN'] ?? 'http://localhost:5173';
 
+const pvcLeaderboard = new PvCLeaderboard();
+
 const app = express();
 app.use(cors({ origin: CLIENT_ORIGIN }));
+app.use(express.json());
 app.get('/health', (_req, res) => res.json({ ok: true }));
 app.get('/leaderboard', (_req, res) => res.json(leaderboard.getTop(20)));
+app.get('/leaderboard/pvc', (_req, res) => res.json(pvcLeaderboard.getTop(20)));
+app.post('/pvc/streak', (req, res) => {
+  const { name, streak } = req.body ?? {};
+  if (typeof name !== 'string' || typeof streak !== 'number' || streak < 0) {
+    return res.status(400).json({ error: 'invalid payload' });
+  }
+  const entry = pvcLeaderboard.submit(name, Math.floor(streak));
+  res.json({ entry, top: pvcLeaderboard.getTop(20) });
+});
 
 const httpServer = createServer(app);
 const io = new Server(httpServer, {

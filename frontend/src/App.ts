@@ -4,6 +4,7 @@ import { UI } from './ui/UI.js';
 import { PvCMode } from './modes/PvCMode.js';
 import { PvPLocalMode } from './modes/PvPLocalMode.js';
 import { PvPOnlineMode } from './modes/PvPOnlineMode.js';
+import { submitStreak, type PvCEntry } from './network/PvCApi.js';
 import type { GameMode } from './types.js';
 
 export class App {
@@ -97,6 +98,8 @@ export class App {
             this.ui.updateHoldRing(progress, gesture);
           },
           onCPUEmoji: (emoji) => this.ui.setCPUGesture(emoji, ''),
+          onStreak: (streak) => this.ui.setStreak(streak),
+          onGameOver: (streak) => this.handlePvCGameOver(streak),
         }
       );
       (this.activeMode as PvCMode).start();
@@ -219,6 +222,39 @@ export class App {
     this.ui.showResult(msg, 'win');
     this.ui.setPhaseHint('Returning to menu…');
     setTimeout(() => this.returnToMenu(), 3500);
+  }
+
+  private async handlePvCGameOver(streak: number): Promise<void> {
+    const label = streak === 0 ? 'GAME OVER' : `STREAK: ${streak} 🔥`;
+    this.ui.showResult(label, 'lose');
+    this.ui.setPhaseHint(streak > 0 ? 'Save your score!' : 'Better luck next time!');
+
+    if (streak <= 0) {
+      // No streak worth saving — just bounce back to menu
+      setTimeout(() => this.returnToMenu(), 2500);
+      return;
+    }
+
+    const name = await this.ui.promptName();
+    const top = await submitStreak(name, streak);
+    // Adapt PvC entries to existing leaderboard renderer shape
+    const adapted = top.map((e: PvCEntry) => ({
+      name: e.name,
+      consecutiveWins: e.streak,
+      bestStreak: e.streak,
+      totalWins: e.streak,
+    }));
+    this.ui.showLeaderboard(adapted, name);
+    this.ui.setPhaseHint('Tap anywhere to return');
+    const onTap = () => {
+      window.removeEventListener('click', onTap);
+      window.removeEventListener('touchstart', onTap);
+      this.returnToMenu();
+    };
+    setTimeout(() => {
+      window.addEventListener('click', onTap);
+      window.addEventListener('touchstart', onTap);
+    }, 500);
   }
 
   private returnToMenu(): void {

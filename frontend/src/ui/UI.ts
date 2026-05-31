@@ -352,6 +352,10 @@ export class UI {
     this.roundEl.textContent = `ROUND ${n}`;
   }
 
+  setStreak(n: number): void {
+    this.roundEl.textContent = `STREAK ${n} 🔥`;
+  }
+
   setCountdown(v: number | string): void {
     const el   = this.countdownEl;
     const ring = this.root.querySelector('#countdown-ring') as HTMLElement | null;
