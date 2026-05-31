@@ -14,6 +14,8 @@ export interface PvCHandlers {
   onGestureFeed: (g: Gesture) => void;
   onHoldProgress?: (progress: number, gesture: Gesture | null) => void;
   onCPUEmoji?: (emoji: string) => void;
+  onStreak?: (streak: number) => void;
+  onGameOver?: (streak: number) => void;
 }
 
 export class PvCMode {
@@ -32,6 +34,10 @@ export class PvCMode {
 
   // Current live gesture (for capture at SHOOT)
   private liveGesture: Gesture = 'none';
+
+  // Streak: consecutive wins vs CPU; ends on first loss
+  private streak = 0;
+  private gameOver = false;
 
   constructor(
     private scene: GameScene,
@@ -115,6 +121,16 @@ export class PvCMode {
         this.scene.triggerShake();
       }, 400);
       this.handlers.onResult(p1Gesture, p2Gesture, winner);
+
+      // Streak: +1 on win, unchanged on draw, GAME OVER on loss
+      if (winner === 1) {
+        this.streak += 1;
+        this.handlers.onStreak?.(this.streak);
+      } else if (winner === 2) {
+        const finalStreak = this.streak;
+        this.gameOver = true;
+        this.handlers.onGameOver?.(finalStreak);
+      }
     });
 
     this.ctrl.on('scoreUpdate', ({ p1, p2, round }) => {
@@ -132,8 +148,20 @@ export class PvCMode {
 
   start(): void {
     this.resetHold();
+    this.streak = 0;
+    this.gameOver = false;
+    this.handlers.onStreak?.(0);
     this.loop(0);
     this.ctrl.startWaiting(); // go idle → phaseChange fires → sets up hold prompt
+  }
+
+  /** Restart after a game-over (player taps "Play again"). */
+  restart(): void {
+    this.streak = 0;
+    this.gameOver = false;
+    this.resetHold();
+    this.handlers.onStreak?.(0);
+    this.ctrl.startWaiting();
   }
 
   stop(): void {
@@ -155,8 +183,8 @@ export class PvCMode {
 
     const inIdle = this.ctrl.getPhase() === 'idle';
 
-    // Hold-to-start: only active when idle and not yet triggered
-    if (inIdle && !this.holdDone) {
+    // Hold-to-start: only active when idle, not yet triggered, and not game-over
+    if (inIdle && !this.holdDone && !this.gameOver) {
       if (this.liveGesture !== 'none' && this.liveGesture === this.holdGesture) {
         this.holdMs += dtMs;
       } else {
