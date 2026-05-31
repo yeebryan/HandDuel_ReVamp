@@ -4,7 +4,7 @@ import { UI } from './ui/UI.js';
 import { PvCMode } from './modes/PvCMode.js';
 import { PvPLocalMode } from './modes/PvPLocalMode.js';
 import { PvPOnlineMode } from './modes/PvPOnlineMode.js';
-import { submitStreak, type PvCEntry } from './network/PvCApi.js';
+import { submitStreak, fetchTop, type PvCEntry } from './network/PvCApi.js';
 import type { GameMode } from './types.js';
 
 export class App {
@@ -29,6 +29,7 @@ export class App {
     this.ui = new UI('ui-root');
     this.ui.onModeSelect((mode) => this.startMode(mode));
     this.ui.onBack(() => this.returnToMenu());
+    this.ui.onViewLeaderboard(() => this.viewPvCLeaderboard());
     this.ui.initModeSelectHover();
 
     // Boot MediaPipe first (no camera needed yet — user hasn't clicked anything)
@@ -222,6 +223,26 @@ export class App {
     this.ui.showResult(msg, 'win');
     this.ui.setPhaseHint('Returning to menu…');
     setTimeout(() => this.returnToMenu(), 3500);
+  }
+
+  private async viewPvCLeaderboard(): Promise<void> {
+    const top = await fetchTop();
+    const adapted = top.map((e: PvCEntry) => ({
+      name: e.name,
+      consecutiveWins: e.streak,
+      bestStreak: e.streak,
+      totalWins: e.streak,
+    }));
+    this.ui.showLeaderboard(adapted, '');
+    const onTap = () => {
+      window.removeEventListener('click', onTap);
+      window.removeEventListener('touchstart', onTap);
+      this.ui.hideLeaderboard();
+    };
+    setTimeout(() => {
+      window.addEventListener('click', onTap);
+      window.addEventListener('touchstart', onTap);
+    }, 500);
   }
 
   private async handlePvCGameOver(streak: number): Promise<void> {
