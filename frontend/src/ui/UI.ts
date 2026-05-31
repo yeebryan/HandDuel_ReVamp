@@ -99,6 +99,7 @@ export class UI {
       <div class="mode-desc">Online · streak leaderboard</div>
     </button>
   </div>
+  <button class="lb-view-btn" id="view-leaderboard-btn">🏆 View Leaderboard</button>
 </div>
 
 <!-- Game HUD -->
@@ -331,6 +332,10 @@ export class UI {
 
   onBack(cb: () => void): void {
     this.root.querySelector('#back-btn')!.addEventListener('click', cb);
+  }
+
+  onViewLeaderboard(cb: () => void): void {
+    this.root.querySelector('#view-leaderboard-btn')!.addEventListener('click', cb);
   }
 
   // ─── HUD updates ─────────────────────────────

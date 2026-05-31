@@ -454,6 +454,24 @@ body {
   outline-offset: 3px;
 }
 
+.lb-view-btn {
+  margin-top: 32px;
+  padding: 12px 28px;
+  background: transparent;
+  color: var(--color-fg, #fff);
+  border: 2px solid rgba(255,255,255,0.25);
+  border-radius: 999px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.lb-view-btn:hover {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.5);
+  transform: translateY(-2px);
+}
+
 .mode-icon {
   display: flex;
   align-items: center;
