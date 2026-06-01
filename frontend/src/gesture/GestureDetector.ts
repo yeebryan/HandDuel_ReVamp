@@ -165,29 +165,58 @@ export class GestureDetector {
     const mx = (x: number) => mirrored ? (1 - x) * W : x * W;
     const my = (y: number) => y * H;
 
-    for (const lms of raw.landmarks) {
-      // Bone connections — cyan at 40% opacity
-      ctx.strokeStyle = 'rgba(62,255,216,0.4)';
-      ctx.lineWidth   = 2;
-      ctx.beginPath();
-      for (const [a, b] of HAND_CONNECTIONS) {
-        ctx.moveTo(mx(lms[a].x), my(lms[a].y));
-        ctx.lineTo(mx(lms[b].x), my(lms[b].y));
-      }
-      ctx.stroke();
+    // Subtle pulse — breathes the glow intensity ~once per second
+    const pulse = 0.85 + Math.sin(performance.now() * 0.004) * 0.15;
 
-      // Landmark dots — dark fill + cyan stroke, matching reference style
-      for (const lm of lms) {
-        const x = mx(lm.x), y = my(lm.y);
+    // Composite mode lets overlapping glow strokes brighten the result
+    const prevComposite = ctx.globalCompositeOperation;
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    for (const lms of raw.landmarks) {
+      // ─── Bones: 3-pass glow (outer bloom, mid glow, bright core) ────
+      const passes = [
+        { width: 14, color: `rgba(62,255,216,${0.10 * pulse})`, blur: 18 },
+        { width: 6,  color: `rgba(62,255,216,${0.35 * pulse})`, blur: 10 },
+        { width: 2,  color: `rgba(220,255,250,${0.95})`,        blur: 0  },
+      ];
+      for (const p of passes) {
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth   = p.width;
+        ctx.shadowBlur  = p.blur;
+        ctx.shadowColor = 'rgba(62,255,216,0.8)';
         ctx.beginPath();
-        ctx.arc(x, y, 4, 0, Math.PI * 2);
-        ctx.fillStyle   = 'rgba(8,8,16,0.7)';
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(62,255,216,0.9)';
-        ctx.lineWidth   = 1.5;
+        for (const [a, b] of HAND_CONNECTIONS) {
+          ctx.moveTo(mx(lms[a].x), my(lms[a].y));
+          ctx.lineTo(mx(lms[b].x), my(lms[b].y));
+        }
         ctx.stroke();
       }
+
+      // ─── Joints: glowing nodes with bright core ───────────────────
+      for (const lm of lms) {
+        const x = mx(lm.x), y = my(lm.y);
+
+        // Outer glow
+        ctx.shadowBlur  = 16;
+        ctx.shadowColor = 'rgba(62,255,216,1)';
+        ctx.fillStyle   = `rgba(62,255,216,${0.55 * pulse})`;
+        ctx.beginPath();
+        ctx.arc(x, y, 7, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Bright core
+        ctx.shadowBlur  = 0;
+        ctx.fillStyle   = 'rgba(240,255,253,1)';
+        ctx.beginPath();
+        ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
+
+    ctx.shadowBlur = 0;
+    ctx.globalCompositeOperation = prevComposite;
   }
 
   /** The last raw result, stored by detect() for drawLandmarks(). */

@@ -10,9 +10,6 @@ export class GameScene {
   private scene!: THREE.Scene;
   private camera!: THREE.PerspectiveCamera;
 
-  private p1Gesture: THREE.Object3D | null = null;
-  private p2Gesture: THREE.Object3D | null = null;
-
   // Ambient particles
   private particles!: THREE.Points;
   private particleVels!: Float32Array;
@@ -21,14 +18,6 @@ export class GameScene {
   private shakeIntensity = 0;
   private cameraBasePos = new THREE.Vector3(0, 1.5, 8);
 
-  // Gesture reveal animation
-  private p1Scale = 0;
-  private p2Scale = 0;
-  private revealActive = false;
-
-  // Pulse animation (winner)
-  private winnerSide: RoundWinner = 0;
-  private pulseT = 0;
 
   init(canvas: HTMLCanvasElement, _p1Video?: HTMLVideoElement): void {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
@@ -50,30 +39,11 @@ export class GameScene {
     window.addEventListener('resize', this.onResize);
   }
 
-  // ─── Arena floor + grid ───────────────────────
-  private buildArena(): void {
-    const grid = new THREE.GridHelper(40, 40, 0x002244, 0x001133);
-    grid.position.y = -2;
-    this.scene.add(grid);
-
-    // Glowing horizon line
-    const lineGeo = new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(-20, -2, 0),
-      new THREE.Vector3(20, -2, 0),
-    ]);
-    const lineMat = new THREE.LineBasicMaterial({ color: 0x0044cc });
-    this.scene.add(new THREE.Line(lineGeo, lineMat));
-
-    // Center divider
-    const divGeo = new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(0, -2, -20),
-      new THREE.Vector3(0, 3, -20),
-      new THREE.Vector3(0, 3, 3),
-      new THREE.Vector3(0, -2, 3),
-    ]);
-    const divMat = new THREE.LineBasicMaterial({ color: 0x333355, transparent: true, opacity: 0.5 });
-    this.scene.add(new THREE.Line(divGeo, divMat));
-  }
+  // ─── Arena: intentionally empty ────────────────
+  // Removed grid + horizon + center divider so the camera feed reads as the
+  // hero. Gesture reveals are now handled by 2D HUD cards. Only the ambient
+  // particle field remains for atmosphere.
+  private buildArena(): void { /* no-op */ }
 
   // ─── Ambient particle field ────────────────────
   private buildParticles(): void {
@@ -120,47 +90,15 @@ export class GameScene {
   setP2Video(_video: HTMLVideoElement): void { /* webcam planes removed */ }
   resetP2Video(): void { /* webcam planes removed */ }
 
-  showGestures(p1: Gesture, p2: Gesture): void {
-    this.clearGestures();
-    this.p1Gesture = this.makeGestureMesh(p1, P1_COLOR);
-    this.p1Gesture.position.set(-(ARENA_W / 2), -1.5, 0);
-    this.p1Gesture.scale.setScalar(0);
-    this.scene.add(this.p1Gesture);
-
-    this.p2Gesture = this.makeGestureMesh(p2, P2_COLOR);
-    this.p2Gesture.position.set(ARENA_W / 2, -1.5, 0);
-    this.p2Gesture.scale.setScalar(0);
-    this.scene.add(this.p2Gesture);
-
-    this.p1Scale = 0;
-    this.p2Scale = 0;
-    this.revealActive = true;
-    this.winnerSide = 0;
-    this.pulseT = 0;
-  }
+  // Gesture meshes removed — the 2D reveal panel handles gesture display.
+  // These remain as no-ops so the rest of the app's wiring stays intact.
+  showGestures(_p1: Gesture, _p2: Gesture): void { /* no-op */ }
 
   highlightWinner(winner: RoundWinner): void {
-    this.winnerSide = winner;
-    this.pulseT = 0;
-    if (winner === 0) return;
-
-    const win = winner === 1 ? this.p1Gesture : this.p2Gesture;
-    const lose = winner === 1 ? this.p2Gesture : this.p1Gesture;
-
-    if (win) this.setEmissiveIntensity(win, 1.4);
-    if (lose) {
-      this.setEmissiveIntensity(lose, 0);
-      this.setColor(lose, 0x222233);
-      lose.scale.setScalar(0.75);
-    }
-    this.shakeIntensity = 0.12;
+    if (winner !== 0) this.shakeIntensity = 0.12;
   }
 
-  clearGestures(): void {
-    if (this.p1Gesture) { this.scene.remove(this.p1Gesture); this.p1Gesture = null; }
-    if (this.p2Gesture) { this.scene.remove(this.p2Gesture); this.p2Gesture = null; }
-    this.revealActive = false;
-  }
+  clearGestures(): void { /* no-op */ }
 
   triggerShake(intensity = 0.08): void {
     this.shakeIntensity = Math.max(this.shakeIntensity, intensity);
@@ -169,32 +107,6 @@ export class GameScene {
   // ─── Animation loop ──────────────────────────
   update(dt: number): void {
     this.animateParticles(dt);
-
-    if (this.revealActive) {
-      const speed = dt * 3.5;
-      this.p1Scale = Math.min(1, this.p1Scale + speed);
-      this.p2Scale = Math.min(1, this.p2Scale + speed);
-
-      if (this.p1Gesture) {
-        this.p1Gesture.scale.setScalar(this.easeOutBack(this.p1Scale));
-        this.p1Gesture.rotation.y += dt * 1.8;
-      }
-      if (this.p2Gesture) {
-        this.p2Gesture.scale.setScalar(this.easeOutBack(this.p2Scale));
-        this.p2Gesture.rotation.y -= dt * 1.8;
-      }
-      if (this.p1Scale >= 1 && this.p2Scale >= 1) this.revealActive = false;
-    }
-
-    // Winner pulse
-    if (this.winnerSide !== 0) {
-      this.pulseT += dt * 4;
-      const pulseMesh = this.winnerSide === 1 ? this.p1Gesture : this.p2Gesture;
-      if (pulseMesh) {
-        const s = 1 + Math.sin(this.pulseT) * 0.06;
-        pulseMesh.scale.setScalar(s);
-      }
-    }
 
     // Camera shake decay
     if (this.shakeIntensity > 0.001) {
@@ -226,66 +138,6 @@ export class GameScene {
     }
     (this.particles.geometry.attributes['position'] as THREE.BufferAttribute).needsUpdate = true;
     this.particles.rotation.y += dt * 0.005;
-  }
-
-  private makeGestureMesh(gesture: Gesture, color: number): THREE.Object3D {
-    const mat = () =>
-      new THREE.MeshStandardMaterial({
-        color,
-        emissive: color,
-        emissiveIntensity: 0.4,
-        roughness: 0.25,
-        metalness: 0.7,
-      });
-
-    switch (gesture) {
-      case 'rock': {
-        return new THREE.Mesh(new THREE.IcosahedronGeometry(0.75, 1), mat());
-      }
-      case 'paper': {
-        return new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.14, 1.5), mat());
-      }
-      case 'scissors': {
-        const g = new THREE.Group();
-        const bladeGeo = new THREE.BoxGeometry(0.14, 1.1, 0.14);
-        const b1 = new THREE.Mesh(bladeGeo, mat());
-        b1.rotation.z = 0.35;
-        b1.position.x = 0.18;
-        const b2 = new THREE.Mesh(bladeGeo, mat());
-        b2.rotation.z = -0.35;
-        b2.position.x = -0.18;
-        g.add(b1, b2);
-        return g;
-      }
-      default: {
-        return new THREE.Mesh(
-          new THREE.SphereGeometry(0.3, 8, 8),
-          new THREE.MeshStandardMaterial({ color: 0x333344, wireframe: true })
-        );
-      }
-    }
-  }
-
-  private setEmissiveIntensity(obj: THREE.Object3D, v: number): void {
-    obj.traverse((c) => {
-      if (c instanceof THREE.Mesh) {
-        (c.material as THREE.MeshStandardMaterial).emissiveIntensity = v;
-      }
-    });
-  }
-
-  private setColor(obj: THREE.Object3D, hex: number): void {
-    obj.traverse((c) => {
-      if (c instanceof THREE.Mesh) {
-        (c.material as THREE.MeshStandardMaterial).color.setHex(hex);
-        (c.material as THREE.MeshStandardMaterial).emissive.setHex(hex);
-      }
-    });
-  }
-
-  private easeOutBack(t: number): number {
-    const c1 = 1.70158, c3 = c1 + 1;
-    return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
   }
 
   private onResize = (): void => {
