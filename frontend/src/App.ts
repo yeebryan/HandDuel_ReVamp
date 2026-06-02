@@ -256,26 +256,11 @@ export class App {
       return;
     }
 
+    // Prompt for name and submit silently, then return to menu.
+    // Players can browse the full leaderboard from the menu button.
     const name = await this.ui.promptName();
-    const top = await submitStreak(name, streak);
-    // Adapt PvC entries to existing leaderboard renderer shape
-    const adapted = top.map((e: PvCEntry) => ({
-      name: e.name,
-      consecutiveWins: e.streak,
-      bestStreak: e.streak,
-      totalWins: e.streak,
-    }));
-    this.ui.showLeaderboard(adapted, name);
-    this.ui.setPhaseHint('Tap anywhere to return');
-    const onTap = () => {
-      window.removeEventListener('click', onTap);
-      window.removeEventListener('touchstart', onTap);
-      this.returnToMenu();
-    };
-    setTimeout(() => {
-      window.addEventListener('click', onTap);
-      window.addEventListener('touchstart', onTap);
-    }, 500);
+    await submitStreak(name, streak);
+    this.returnToMenu();
   }
 
   private returnToMenu(): void {
