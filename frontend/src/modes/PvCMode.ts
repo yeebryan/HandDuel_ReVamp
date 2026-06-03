@@ -161,7 +161,8 @@ export class PvCMode {
     this.gameOver = false;
     this.resetHold();
     this.handlers.onStreak?.(0);
-    this.ctrl.startWaiting();
+    // Full controller reset so cumulative score / round counter zero out
+    this.ctrl.reset();
   }
 
   stop(): void {

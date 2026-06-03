@@ -245,27 +245,29 @@ export class App {
   }
 
   private async handlePvCGameOver(streak: number): Promise<void> {
-    // Always lead with a clear GAME OVER beat so the player gets feedback
-    this.ui.showResult('GAME OVER', 'lose');
-    this.ui.setPhaseHint(
-      streak > 0
-        ? `Your streak: ${streak} 🔥 — save your score!`
-        : 'Better luck next time!'
-    );
+    // Let the reveal panel show "CPU WINS" cleanly for a beat,
+    // then dismiss it before showing the Game Over modal — avoids the
+    // overlapping text that happened when both rendered together.
+    await new Promise((r) => setTimeout(r, 1200));
+    this.ui.hideResult(); // also hides the reveal panel
 
-    // Let GAME OVER land before next step
-    await new Promise((r) => setTimeout(r, 1800));
-
-    if (streak <= 0) {
-      this.returnToMenu();
-      return;
+    // If streak worth saving, prompt for name first so it lands on the
+    // leaderboard before they make a choice
+    if (streak > 0) {
+      const name = await this.ui.promptName();
+      await submitStreak(name, streak);
     }
 
-    // Streak worth saving → prompt, submit, back to menu.
-    // The full leaderboard lives behind the menu button.
-    const name = await this.ui.promptName();
-    await submitStreak(name, streak);
-    this.returnToMenu();
+    // Ask: play again, or back to menu?
+    const choice = await this.ui.promptGameOver(streak);
+    if (choice === 'play-again') {
+      // Reset HUD and restart the PvC run
+      this.ui.setScore(0, 0);
+      this.ui.setStreak(0);
+      (this.activeMode as PvCMode | null)?.restart();
+    } else {
+      this.returnToMenu();
+    }
   }
 
   private returnToMenu(): void {
