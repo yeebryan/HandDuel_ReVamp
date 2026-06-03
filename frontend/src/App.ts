@@ -82,15 +82,9 @@ export class App {
             const EMOJI: Record<string, string> = { rock:'✊', paper:'🖐️', scissors:'✌️', none:'❓' };
             const cpuState = winner === 0 ? 'draw' : winner === 1 ? 'lose' : 'win';
             this.ui.setCPUGesture(EMOJI[p2g] ?? '❓', cpuState);
+            // The reveal panel now contains the verdict text — no separate
+            // floating result needed for round wins/losses.
             this.ui.showRevealPanel(p1g, p2g, winner);
-            // Spell out CPU's choice in the result so it's unmissable
-            const cpuEmoji = EMOJI[p2g] ?? '❓';
-            const label =
-              winner === 0 ? `DRAW · ${cpuEmoji}` :
-              winner === 1 ? `YOU WIN! · CPU ${cpuEmoji}` :
-                             `CPU WINS WITH ${cpuEmoji}`;
-            const type  = winner === 0 ? 'draw' : winner === 1 ? 'win' : 'lose';
-            setTimeout(() => this.ui.showResult(label, type), 400);
           },
           onScore: (p1, p2, round) => {
             this.ui.setScore(p1, p2);

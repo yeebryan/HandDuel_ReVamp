@@ -135,15 +135,18 @@ export class UI {
 
   <!-- Reveal panel: side-by-side after each round -->
   <div id="reveal-panel">
-    <div class="reveal-slot" id="reveal-p1-slot">
-      <span class="reveal-emoji" id="reveal-p1-emoji">✊</span>
-      <span class="reveal-label" id="reveal-p1-label">YOU</span>
+    <div class="reveal-cards">
+      <div class="reveal-slot" id="reveal-p1-slot">
+        <span class="reveal-emoji" id="reveal-p1-emoji">✊</span>
+        <span class="reveal-label" id="reveal-p1-label">YOU</span>
+      </div>
+      <div class="reveal-vs">VS</div>
+      <div class="reveal-slot" id="reveal-p2-slot">
+        <span class="reveal-emoji" id="reveal-p2-emoji">🤖</span>
+        <span class="reveal-label" id="reveal-p2-label">CPU</span>
+      </div>
     </div>
-    <div class="reveal-vs">VS</div>
-    <div class="reveal-slot" id="reveal-p2-slot">
-      <span class="reveal-emoji" id="reveal-p2-emoji">🤖</span>
-      <span class="reveal-label" id="reveal-p2-label">CPU</span>
-    </div>
+    <div class="reveal-verdict" id="reveal-verdict"></div>
   </div>
 
   <!-- Bottom bar: hold ring + gesture pill + status hint -->
@@ -531,6 +534,15 @@ export class UI {
     this.revealP1Slot.classList.toggle('loser',  winner === 2);
     this.revealP2Slot.classList.toggle('winner', winner === 2);
     this.revealP2Slot.classList.toggle('loser',  winner === 1);
+
+    // Verdict text sits under the cards as part of the same panel
+    const verdictEl = this.root.querySelector('#reveal-verdict') as HTMLElement;
+    const verdict =
+      winner === 0 ? 'DRAW' :
+      winner === 1 ? 'YOU WIN' :
+                     'CPU WINS';
+    verdictEl.textContent = verdict;
+    verdictEl.className = `reveal-verdict ${winner === 0 ? 'draw' : winner === 1 ? 'win' : 'lose'}`;
 
     this.revealPanel.classList.add('visible');
   }
