@@ -184,6 +184,18 @@ export class UI {
   </div>
 </div>
 
+<!-- Game Over modal (PvC end-of-run) -->
+<div id="game-over-modal" class="hidden">
+  <div class="modal-box game-over-box">
+    <h2 class="game-over-title">GAME OVER</h2>
+    <p class="game-over-streak" id="game-over-streak"></p>
+    <div class="game-over-actions">
+      <button class="submit-btn ghost" id="game-over-menu">← Back to Menu</button>
+      <button class="submit-btn" id="game-over-restart">Play Again</button>
+    </div>
+  </div>
+</div>
+
 <!-- Connecting / waiting overlay -->
 <div id="connecting-overlay" class="hidden">
   <div class="spinner"></div>
@@ -484,6 +496,36 @@ export class UI {
       };
       btn.onclick = submit;
       input.onkeydown = (e) => { if (e.key === 'Enter') submit(); };
+    });
+  }
+
+  // ─── Game Over modal ─────────────────────────
+
+  /**
+   * Show the Game Over modal and resolve with the user's choice.
+   * Pass streak > 0 to display the streak summary.
+   */
+  promptGameOver(streak: number): Promise<'play-again' | 'menu'> {
+    const modal     = this.root.querySelector('#game-over-modal') as HTMLElement;
+    const streakEl  = this.root.querySelector('#game-over-streak') as HTMLElement;
+    const restartBtn = this.root.querySelector('#game-over-restart') as HTMLButtonElement;
+    const menuBtn    = this.root.querySelector('#game-over-menu') as HTMLButtonElement;
+
+    streakEl.innerHTML = streak > 0
+      ? `Streak: <strong>${streak}</strong> 🔥`
+      : 'Better luck next time!';
+
+    this.show(modal);
+
+    return new Promise((resolve) => {
+      const finish = (choice: 'play-again' | 'menu') => {
+        this.hide(modal);
+        restartBtn.onclick = null;
+        menuBtn.onclick = null;
+        resolve(choice);
+      };
+      restartBtn.onclick = () => finish('play-again');
+      menuBtn.onclick    = () => finish('menu');
     });
   }
 
