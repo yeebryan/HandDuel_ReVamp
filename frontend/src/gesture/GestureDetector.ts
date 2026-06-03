@@ -165,27 +165,24 @@ export class GestureDetector {
     const mx = (x: number) => mirrored ? (1 - x) * W : x * W;
     const my = (y: number) => y * H;
 
-    // Subtle pulse — breathes the glow intensity ~once per second
-    const pulse = 0.85 + Math.sin(performance.now() * 0.004) * 0.15;
-
-    // Composite mode lets overlapping glow strokes brighten the result
+    // Layered strokes give a glow look without shadowBlur (which is the
+    // single biggest canvas perf killer — each blur forces a full off-screen
+    // composite). The 'lighter' composite makes overlaps brighten naturally.
     const prevComposite = ctx.globalCompositeOperation;
     ctx.globalCompositeOperation = 'lighter';
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
     for (const lms of raw.landmarks) {
-      // ─── Bones: 3-pass glow (outer bloom, mid glow, bright core) ────
+      // ─── Bones: 2 wide soft passes + 1 bright core (no shadowBlur) ──
       const passes = [
-        { width: 14, color: `rgba(62,255,216,${0.10 * pulse})`, blur: 18 },
-        { width: 6,  color: `rgba(62,255,216,${0.35 * pulse})`, blur: 10 },
-        { width: 2,  color: `rgba(220,255,250,${0.95})`,        blur: 0  },
+        { width: 10, color: 'rgba(62,255,216,0.18)' },  // soft halo
+        { width: 4,  color: 'rgba(62,255,216,0.55)' },  // mid glow
+        { width: 1.5, color: 'rgba(220,255,250,0.95)' }, // bright core
       ];
       for (const p of passes) {
         ctx.strokeStyle = p.color;
         ctx.lineWidth   = p.width;
-        ctx.shadowBlur  = p.blur;
-        ctx.shadowColor = 'rgba(62,255,216,0.8)';
         ctx.beginPath();
         for (const [a, b] of HAND_CONNECTIONS) {
           ctx.moveTo(mx(lms[a].x), my(lms[a].y));
@@ -194,28 +191,21 @@ export class GestureDetector {
         ctx.stroke();
       }
 
-      // ─── Joints: glowing nodes with bright core ───────────────────
+      // ─── Joints: soft halo + bright core, no shadowBlur ──────────
+      ctx.fillStyle = 'rgba(62,255,216,0.4)';
       for (const lm of lms) {
-        const x = mx(lm.x), y = my(lm.y);
-
-        // Outer glow
-        ctx.shadowBlur  = 16;
-        ctx.shadowColor = 'rgba(62,255,216,1)';
-        ctx.fillStyle   = `rgba(62,255,216,${0.55 * pulse})`;
         ctx.beginPath();
-        ctx.arc(x, y, 7, 0, Math.PI * 2);
+        ctx.arc(mx(lm.x), my(lm.y), 6, 0, Math.PI * 2);
         ctx.fill();
-
-        // Bright core
-        ctx.shadowBlur  = 0;
-        ctx.fillStyle   = 'rgba(240,255,253,1)';
+      }
+      ctx.fillStyle = 'rgba(240,255,253,1)';
+      for (const lm of lms) {
         ctx.beginPath();
-        ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+        ctx.arc(mx(lm.x), my(lm.y), 2.2, 0, Math.PI * 2);
         ctx.fill();
       }
     }
 
-    ctx.shadowBlur = 0;
     ctx.globalCompositeOperation = prevComposite;
   }
 
