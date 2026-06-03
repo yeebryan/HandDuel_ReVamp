@@ -165,8 +165,10 @@ export class UI {
 
 <!-- Leaderboard (online competition) -->
 <div id="leaderboard" class="hidden">
-  <h3>🔥 Top Streaks</h3>
-  <div id="leaderboard-list"></div>
+  <div id="leaderboard-panel">
+    <h3>🔥 Top Streaks</h3>
+    <div id="leaderboard-list"></div>
+  </div>
 </div>
 
 <!-- Name entry modal -->

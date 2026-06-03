@@ -83,7 +83,12 @@ export class App {
             const cpuState = winner === 0 ? 'draw' : winner === 1 ? 'lose' : 'win';
             this.ui.setCPUGesture(EMOJI[p2g] ?? '❓', cpuState);
             this.ui.showRevealPanel(p1g, p2g, winner);
-            const label = winner === 0 ? 'DRAW' : winner === 1 ? 'YOU WIN!' : 'CPU WINS';
+            // Spell out CPU's choice in the result so it's unmissable
+            const cpuEmoji = EMOJI[p2g] ?? '❓';
+            const label =
+              winner === 0 ? `DRAW · ${cpuEmoji}` :
+              winner === 1 ? `YOU WIN! · CPU ${cpuEmoji}` :
+                             `CPU WINS WITH ${cpuEmoji}`;
             const type  = winner === 0 ? 'draw' : winner === 1 ? 'win' : 'lose';
             setTimeout(() => this.ui.showResult(label, type), 400);
           },
@@ -246,18 +251,24 @@ export class App {
   }
 
   private async handlePvCGameOver(streak: number): Promise<void> {
-    const label = streak === 0 ? 'GAME OVER' : `STREAK: ${streak} 🔥`;
-    this.ui.showResult(label, 'lose');
-    this.ui.setPhaseHint(streak > 0 ? 'Save your score!' : 'Better luck next time!');
+    // Always lead with a clear GAME OVER beat so the player gets feedback
+    this.ui.showResult('GAME OVER', 'lose');
+    this.ui.setPhaseHint(
+      streak > 0
+        ? `Your streak: ${streak} 🔥 — save your score!`
+        : 'Better luck next time!'
+    );
+
+    // Let GAME OVER land before next step
+    await new Promise((r) => setTimeout(r, 1800));
 
     if (streak <= 0) {
-      // No streak worth saving — just bounce back to menu
-      setTimeout(() => this.returnToMenu(), 2500);
+      this.returnToMenu();
       return;
     }
 
-    // Prompt for name and submit silently, then return to menu.
-    // Players can browse the full leaderboard from the menu button.
+    // Streak worth saving → prompt, submit, back to menu.
+    // The full leaderboard lives behind the menu button.
     const name = await this.ui.promptName();
     await submitStreak(name, streak);
     this.returnToMenu();
