@@ -4,7 +4,7 @@ import { UI } from './ui/UI.js';
 import { PvCMode } from './modes/PvCMode.js';
 import { PvPLocalMode } from './modes/PvPLocalMode.js';
 import { PvPOnlineMode } from './modes/PvPOnlineMode.js';
-import { submitStreak, fetchTop, type PvCEntry } from './network/PvCApi.js';
+import { submitStreak, fetchTop, flushQueue, type PvCEntry } from './network/PvCApi.js';
 import type { GameMode } from './types.js';
 
 export class App {
@@ -30,6 +30,11 @@ export class App {
     this.ui.onModeSelect((mode) => this.startMode(mode));
     this.ui.onBack(() => this.returnToMenu());
     this.ui.onViewLeaderboard(() => this.viewPvCLeaderboard());
+
+    // Replay any submissions queued from a previous session that failed
+    // due to a cold-start or offline moment. Fire-and-forget — UI shouldn't
+    // care about the result.
+    void flushQueue();
     this.ui.initModeSelectHover();
 
     // Boot MediaPipe first (no camera needed yet — user hasn't clicked anything)
@@ -251,11 +256,13 @@ export class App {
     await new Promise((r) => setTimeout(r, 1200));
     this.ui.hideResult(); // also hides the reveal panel
 
-    // If streak worth saving, prompt for name first so it lands on the
-    // leaderboard before they make a choice
+    // If streak worth saving, prompt for name and fire submission off in
+    // the background. submitStreak no longer blocks the UI — if it fails
+    // (cold-start, offline) it gets queued in localStorage and retried on
+    // the next page load.
     if (streak > 0) {
       const name = await this.ui.promptName();
-      await submitStreak(name, streak);
+      submitStreak(name, streak);
     }
 
     // Ask: play again, or back to menu?
