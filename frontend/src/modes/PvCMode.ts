@@ -3,7 +3,7 @@ import { GestureDetector } from '../gesture/GestureDetector.js';
 import { GameScene } from '../scenes/GameScene.js';
 import type { Gesture, RoundWinner } from '../types.js';
 
-const HOLD_DURATION_MS = 1500; // match hand-duel's 1500ms hold
+const HOLD_DURATION_MS = 1000; // 1s hold — snappy but deliberate
 const CPU_CYCLE_EMOJIS = ['✊', '🖐️', '✌️'];
 const CPU_CYCLE_MS = 180;
 
