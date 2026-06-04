@@ -327,6 +327,10 @@ export class UI {
 
   showGameHud(p1Name: string, p2Name: string): void {
     this.hide(this.modeSelect);
+    // Make sure any modal that was open on the menu doesn't leak into the game.
+    // Common case: user opened "View Leaderboard" then clicked a mode before
+    // the tap-to-dismiss listener attached.
+    this.hide(this.leaderboard);
     this.show(this.gameHud);
     this.p1NameEl.textContent = p1Name;
     this.p2NameEl.textContent = p2Name;
