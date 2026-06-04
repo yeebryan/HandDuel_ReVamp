@@ -16,8 +16,14 @@ app.use(cors({ origin: CLIENT_ORIGIN }));
 app.use(express.json());
 app.get('/health', (_req, res) => res.json({ ok: true }));
 app.get('/leaderboard', (_req, res) => res.json(leaderboard.getTop(20)));
-app.get('/leaderboard/pvc', (_req, res) => res.json(pvcLeaderboard.getTop(20)));
-app.post('/pvc/streak', (req, res) => {
+app.get('/leaderboard/pvc', async (_req, res) => {
+  // Make sure the initial Blob load is complete before returning data
+  // so the first request after boot doesn't see an empty leaderboard.
+  await pvcLeaderboard.whenReady();
+  res.json(pvcLeaderboard.getTop(20));
+});
+app.post('/pvc/streak', async (req, res) => {
+  await pvcLeaderboard.whenReady();
   const { name, streak } = req.body ?? {};
   if (typeof name !== 'string' || typeof streak !== 'number' || streak < 0) {
     return res.status(400).json({ error: 'invalid payload' });
