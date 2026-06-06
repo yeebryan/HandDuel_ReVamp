@@ -180,7 +180,10 @@ export class UI {
     <h2>Enter your name</h2>
     <p>You'll be shown on the global leaderboard</p>
     <input id="player-name-input" type="text" maxlength="16" placeholder="Your name…" autocomplete="off" />
-    <button class="submit-btn" id="name-submit">Join Competition</button>
+    <div class="name-modal-actions">
+      <button class="submit-btn ghost" id="name-cancel">Cancel</button>
+      <button class="submit-btn" id="name-submit">Continue</button>
+    </div>
   </div>
 </div>
 
@@ -485,21 +488,32 @@ export class UI {
 
   // ─── Name Modal ───────────────────────────────
 
-  promptName(): Promise<string> {
+  /**
+   * Prompts for a name. Resolves with the entered name, or `null` if the
+   * user cancelled (clicked Cancel or pressed Escape).
+   */
+  promptName(): Promise<string | null> {
     this.show(this.nameModal);
-    const input = this.root.querySelector('#player-name-input') as HTMLInputElement;
-    const btn   = this.root.querySelector('#name-submit') as HTMLButtonElement;
+    const input  = this.root.querySelector('#player-name-input') as HTMLInputElement;
+    const okBtn  = this.root.querySelector('#name-submit') as HTMLButtonElement;
+    const cancel = this.root.querySelector('#name-cancel') as HTMLButtonElement;
     input.value = '';
     input.focus();
 
     return new Promise((resolve) => {
-      const submit = () => {
-        const name = input.value.trim() || 'Player';
+      const finish = (result: string | null) => {
         this.hide(this.nameModal);
-        resolve(name);
+        okBtn.onclick = null;
+        cancel.onclick = null;
+        input.onkeydown = null;
+        resolve(result);
       };
-      btn.onclick = submit;
-      input.onkeydown = (e) => { if (e.key === 'Enter') submit(); };
+      okBtn.onclick   = () => finish(input.value.trim() || 'Player');
+      cancel.onclick  = () => finish(null);
+      input.onkeydown = (e) => {
+        if (e.key === 'Enter')  finish(input.value.trim() || 'Player');
+        if (e.key === 'Escape') finish(null);
+      };
     });
   }
 
