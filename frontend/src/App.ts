@@ -88,9 +88,18 @@ export class App {
             const EMOJI: Record<string, string> = { rock:'✊', paper:'🖐️', scissors:'✌️', none:'❓' };
             const cpuState = winner === 0 ? 'draw' : winner === 1 ? 'lose' : 'win';
             this.ui.setCPUGesture(EMOJI[p2g] ?? '❓', cpuState);
-            // The reveal panel now contains the verdict text — no separate
-            // floating result needed for round wins/losses.
-            this.ui.showRevealPanel(p1g, p2g, winner);
+
+            // Show "LOCKED ✊" immediately so the player sees what got
+            // captured — closes the gap for users who change gestures
+            // late and don't realize SHOOT was the lock-in moment.
+            this.ui.showLockedIn(p1g);
+
+            // Reveal panel comes in slightly after so the LOCKED moment
+            // lands first, then the verdict.
+            setTimeout(() => {
+              this.ui.hideLockedIn();
+              this.ui.showRevealPanel(p1g, p2g, winner);
+            }, 600);
           },
           onScore: (p1, p2, round) => {
             this.ui.setScore(p1, p2);
@@ -211,6 +220,7 @@ export class App {
     switch (phase) {
       case 'countdown':
         this.ui.hideResult();
+        this.ui.hideLockedIn();
         this.ui.setCountdown(countdown ?? '');
         this.ui.setPhaseHint('');
         break;
