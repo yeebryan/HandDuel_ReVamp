@@ -166,11 +166,12 @@ export class UI {
 
 </div>
 
-<!-- Leaderboard (online competition) -->
+<!-- Leaderboard (online competition + PvC view) -->
 <div id="leaderboard" class="hidden">
-  <div id="leaderboard-panel">
-    <h3>🔥 Top Streaks</h3>
+  <div class="modal-box lb-modal">
+    <h2>🔥 Top Streaks</h2>
     <div id="leaderboard-list"></div>
+    <button class="submit-btn ghost" id="leaderboard-close">Close</button>
   </div>
 </div>
 
@@ -471,6 +472,16 @@ export class UI {
   showLeaderboard(entries: LeaderboardEntry[], currentName = ''): void {
     this.show(this.leaderboard);
     const list = this.root.querySelector('#leaderboard-list')!;
+
+    if (entries.length === 0) {
+      list.innerHTML = `
+        <div class="lb-empty">
+          <strong>No streaks yet</strong>
+          Be the first to set a record 🔥
+        </div>`;
+      return;
+    }
+
     list.innerHTML = entries
       .slice(0, 8)
       .map(
@@ -484,7 +495,24 @@ export class UI {
       .join('');
   }
 
+  /** Shows the leaderboard modal immediately with a loading spinner —
+   *  call before awaiting the API so the user sees feedback while the
+   *  server (possibly cold) wakes up. */
+  showLeaderboardLoading(): void {
+    this.show(this.leaderboard);
+    const list = this.root.querySelector('#leaderboard-list')!;
+    list.innerHTML = `
+      <div class="lb-loading">
+        <div class="spinner" aria-hidden="true"></div>
+        <div>Loading leaderboard…</div>
+      </div>`;
+  }
+
   hideLeaderboard(): void { this.hide(this.leaderboard); }
+
+  onLeaderboardClose(cb: () => void): void {
+    this.root.querySelector('#leaderboard-close')!.addEventListener('click', cb);
+  }
 
   // ─── Name Modal ───────────────────────────────
 
