@@ -137,6 +137,10 @@ export class App {
 
     } else if (mode === 'pvp-online') {
       const playerName = await this.ui.promptName();
+      if (playerName === null) {
+        // User cancelled — bail out without showing the game HUD
+        return;
+      }
       this.ui.showGameHud(playerName, '?');
       this.ui.showConnecting('Connecting to server…');
 
@@ -174,7 +178,12 @@ export class App {
               setTimeout(() => onlineMode.stop(), 3000);
             }
           },
-          onLeaderboard: (entries) => this.ui.showLeaderboard(entries, playerName),
+          onLeaderboard: (entries) => {
+            // Don't pop the leaderboard mid-matchmaking if there's nothing
+            // to show — empty list is just noise and obscures "Finding opponent…"
+            if (entries.length === 0) return;
+            this.ui.showLeaderboard(entries, playerName);
+          },
           onDisconnected: () => {
             this.ui.setPhaseHint('Opponent disconnected');
             setTimeout(() => this.returnToMenu(), 2000);
@@ -257,7 +266,9 @@ export class App {
     // the next page load.
     if (streak > 0) {
       const name = await this.ui.promptName();
-      submitStreak(name, streak);
+      // Cancel = don't save to leaderboard, but still flow through to
+      // Game Over modal so the player can replay or quit.
+      if (name !== null) submitStreak(name, streak);
     }
 
     // Ask: play again, or back to menu?

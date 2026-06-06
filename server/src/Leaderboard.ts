@@ -30,7 +30,10 @@ export class Leaderboard {
   }
 
   getTop(n = 10): LeaderboardEntry[] {
+    // Hide entries with no wins yet — players who just joined the queue
+    // shouldn't appear on the leaderboard with a streak of 0.
     return [...this.players.values()]
+      .filter((e) => e.bestStreak > 0 || e.consecutiveWins > 0)
       .sort((a, b) => b.consecutiveWins - a.consecutiveWins || b.bestStreak - a.bestStreak)
       .slice(0, n);
   }

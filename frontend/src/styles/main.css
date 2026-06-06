@@ -1026,6 +1026,14 @@ body {
 .modal-box .submit-btn:active         { transform: translateY(0); }
 .modal-box .submit-btn:focus-visible  { outline: 2px solid var(--color-ink); outline-offset: 2px; }
 
+/* Row of two buttons inside a modal */
+.name-modal-actions {
+  display: flex;
+  gap: var(--space-3);
+  width: 100%;
+}
+.name-modal-actions .submit-btn { flex: 1; }
+
 /* Ghost variant for secondary action */
 .modal-box .submit-btn.ghost {
   background: transparent;
