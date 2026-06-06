@@ -30,6 +30,7 @@ export class App {
     this.ui.onModeSelect((mode) => this.startMode(mode));
     this.ui.onBack(() => this.returnToMenu());
     this.ui.onViewLeaderboard(() => this.viewPvCLeaderboard());
+    this.ui.onLeaderboardClose(() => this.ui.hideLeaderboard());
 
     // Replay any submissions queued from a previous session that failed
     // due to a cold-start or offline moment. Fire-and-forget — UI shouldn't
@@ -230,6 +231,9 @@ export class App {
   }
 
   private async viewPvCLeaderboard(): Promise<void> {
+    // Show the modal immediately with a spinner so the user gets feedback
+    // even when the server is cold-starting (up to ~50s on Render free tier).
+    this.ui.showLeaderboardLoading();
     const top = await fetchTop();
     const adapted = top.map((e: PvCEntry) => ({
       name: e.name,
@@ -238,15 +242,6 @@ export class App {
       totalWins: e.streak,
     }));
     this.ui.showLeaderboard(adapted, '');
-    const onTap = () => {
-      window.removeEventListener('click', onTap);
-      window.removeEventListener('touchstart', onTap);
-      this.ui.hideLeaderboard();
-    };
-    setTimeout(() => {
-      window.addEventListener('click', onTap);
-      window.addEventListener('touchstart', onTap);
-    }, 500);
   }
 
   private async handlePvCGameOver(streak: number): Promise<void> {
