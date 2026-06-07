@@ -549,22 +549,29 @@ body {
 
 .hud-score-name {
   font-family: var(--font-body);
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--color-ink-3);
+  color: var(--color-ink);              /* A — was ink-3 */
+  font-weight: 600;
 }
 
 .hud-score-val {
   font-family: var(--font-display);
-  font-size: var(--text-2xl);
+  font-size: var(--text-3xl);           /* 2 — bumped from 2xl */
   font-weight: 800;
   letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
   line-height: 1;
 }
-.hud-score-val.p1 { color: var(--color-p1); filter: drop-shadow(0 0 10px var(--color-p1-glow)); }
-.hud-score-val.p2 { color: var(--color-p2); filter: drop-shadow(0 0 10px var(--color-p2-glow)); }
+.hud-score-val.p1 {
+  color: var(--color-p1);
+  filter: drop-shadow(0 0 14px var(--color-p1-glow)) drop-shadow(0 0 28px var(--color-p1-glow));  /* 4 — stronger glow */
+}
+.hud-score-val.p2 {
+  color: var(--color-p2);
+  filter: drop-shadow(0 0 14px var(--color-p2-glow)) drop-shadow(0 0 28px var(--color-p2-glow));  /* 4 — stronger glow */
+}
 .hud-score-val.pulse { animation: score-pulse var(--dur-long) var(--ease-out); }
 
 @keyframes score-pulse {
@@ -575,10 +582,11 @@ body {
 
 .hud-round {
   font-family: var(--font-body);
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--color-ink-3);
+  color: var(--color-ink);              /* B — was ink-3 */
+  font-weight: 600;
   flex: 1;
   text-align: center;
 }
@@ -788,10 +796,12 @@ body {
 
 .phase-hint {
   font-family: var(--font-body);
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--color-ink-3);
+  color: var(--color-ink);              /* C — was ink-3 */
+  font-weight: 600;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
 }
 
 /* ────────────────────────────────────────────── */
@@ -841,10 +851,11 @@ body {
 /* Hint text (right of pill) */
 .hint-text {
   font-family: var(--font-body);
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--color-ink-3);
+  color: var(--color-ink);              /* G — was ink-3 */
+  font-weight: 600;
   min-width: 170px;
 }
 
@@ -977,7 +988,7 @@ body {
   color: var(--color-accent);
   font-size: var(--text-lg);
   font-variant-numeric: tabular-nums;
-  filter: drop-shadow(0 0 8px var(--color-accent-streak-glow));
+  filter: drop-shadow(0 0 12px var(--color-accent-streak-glow)) drop-shadow(0 0 24px var(--color-accent-streak-glow));  /* 4 — stronger glow */
   min-width: 48px;
   text-align: right;
 }
@@ -1257,9 +1268,19 @@ body {
   text-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
   animation: verdict-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.reveal-verdict.win  { color: var(--color-accent); filter: drop-shadow(0 0 16px var(--color-accent-glow)); }
-.reveal-verdict.lose { color: #ff5566; filter: drop-shadow(0 0 16px rgba(255,85,102,0.6)); }
-.reveal-verdict.draw { color: #aaa; }
+/* 4 — strengthened verdict glow */
+.reveal-verdict.win  {
+  color: var(--color-win);
+  filter: drop-shadow(0 0 20px var(--color-win-glow)) drop-shadow(0 0 40px var(--color-win-glow));
+}
+.reveal-verdict.lose {
+  color: var(--color-lose);
+  filter: drop-shadow(0 0 20px var(--color-lose-glow)) drop-shadow(0 0 40px var(--color-lose-glow));
+}
+.reveal-verdict.draw {
+  color: var(--color-draw);
+  filter: drop-shadow(0 0 20px var(--color-draw-glow));
+}
 
 @keyframes verdict-pop {
   0%   { transform: scale(0.6); opacity: 0; }
@@ -1277,33 +1298,34 @@ body {
   background: oklch(7% 0.018 255 / 0.82);
   border: 2px solid var(--color-border-2);
   border-radius: var(--radius-lg);
-  padding: var(--space-5) var(--space-9);
-  min-width: 140px;
+  padding: var(--space-6) var(--space-8);       /* 3 — even, bigger padding */
+  min-width: 180px;                              /* 3 — bigger base */
 }
 
 .reveal-slot.winner {
   border-color: var(--color-accent-hover-border);
-  box-shadow: 0 0 32px -2px var(--color-accent-glow);
-  transform: scale(1.06);
+  box-shadow: 0 0 36px -2px var(--color-accent-glow), 0 0 64px -8px var(--color-accent-glow);
+  transform: scale(1.04);                        /* 3 — gentler scale gap */
   transition: transform 0.2s var(--ease-out);
 }
 
 .reveal-slot.loser {
-  opacity: 0.45;
+  opacity: 0.7;                                  /* 3 — loser stays more visible */
 }
 
 .reveal-emoji {
-  font-size: 5rem;
+  font-size: 6rem;                               /* 3 — bigger emoji */
   line-height: 1;
-  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5));
+  filter: drop-shadow(0 4px 14px rgba(0,0,0,0.6));
 }
 
 .reveal-label {
   font-family: var(--font-body);
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--color-ink-3);
+  color: var(--color-ink);                      /* F — was ink-3 */
+  font-weight: 600;
 }
 
 .reveal-vs {
@@ -1342,12 +1364,16 @@ body {
   }
 
   .hud-score-val {
-    font-size: 1.5rem;
+    font-size: 2rem;                  /* 2 — was 1.5rem, scaled to match new desktop bump */
   }
 
   .hud-round {
-    font-size: var(--text-xs);
+    font-size: var(--text-sm);
     letter-spacing: 0.06em;
+  }
+
+  .hud-score-name {
+    font-size: var(--text-xs);
   }
 
   .back-btn {
@@ -1383,7 +1409,7 @@ body {
   }
 
   .hint-text {
-    font-size: 0.6rem;
+    font-size: var(--text-xs);        /* G — was 0.6rem (illegible); raised + kept white */
   }
 
   /* Countdown */
@@ -1404,11 +1430,11 @@ body {
   }
 
   .reveal-slot {
-    padding: var(--space-3) var(--space-4);
-    min-width: 80px;
+    padding: var(--space-4) var(--space-5);    /* 3 — bigger on mobile too */
+    min-width: 110px;
   }
 
-  .reveal-emoji { font-size: 2.2rem; }
+  .reveal-emoji { font-size: 3rem; }            /* 3 — bumped */
   .reveal-vs    { font-size: var(--text-base); }
 
   /* Camera permission screen */
