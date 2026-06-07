@@ -120,9 +120,10 @@ export class UI {
   </div>
 
   <!-- CPU panel: floating top-right, shows ❓ → cycling → revealed gesture -->
-  <div id="cpu-panel">
+  <div id="cpu-panel" title="CPU picks randomly before the round — it can't see your hand.">
     <div id="cpu-emoji">❓</div>
     <div class="cpu-label">CPU</div>
+    <div class="cpu-fair-tag">🎲 RANDOM</div>
   </div>
 
   <!-- Arena: large countdown + result text -->
@@ -131,6 +132,9 @@ export class UI {
     <div class="countdown-display" id="countdown-display"></div>
     <div class="result-display hidden" id="result-display"></div>
     <div class="phase-hint" id="phase-hint"></div>
+    <!-- Captured-gesture flash: shows "LOCKED IN ✊" briefly at SHOOT so
+         the player knows what got captured, even if their hand moves after -->
+    <div class="locked-in-display hidden" id="locked-in-display"></div>
   </div>
 
   <!-- Reveal panel: side-by-side after each round -->
@@ -432,6 +436,25 @@ export class UI {
   flashScreen(): void {
     this.flashOverlay.classList.add('active');
     setTimeout(() => this.flashOverlay.classList.remove('active'), 120);
+  }
+
+  /** Briefly show the captured gesture so the player gets unmistakable
+   *  confirmation of what was locked in at the SHOOT moment.
+   *  gesture: the gesture that was captured (rock|paper|scissors|none). */
+  showLockedIn(gesture: Gesture): void {
+    const el = this.root.querySelector('#locked-in-display') as HTMLElement;
+    const emoji = GESTURE_EMOJI[gesture] ?? '?';
+    const label = gesture === 'none' ? 'NO HAND' : 'LOCKED';
+    el.innerHTML = `<span class="locked-emoji">${emoji}</span><span class="locked-label">${label}</span>`;
+    el.classList.remove('hidden');
+    // restart the CSS animation by reflowing
+    el.classList.remove('pop');
+    void el.offsetWidth;
+    el.classList.add('pop');
+  }
+
+  hideLockedIn(): void {
+    (this.root.querySelector('#locked-in-display') as HTMLElement).classList.add('hidden');
   }
 
   // ─── Gesture indicator (bottom pill) ─────────
