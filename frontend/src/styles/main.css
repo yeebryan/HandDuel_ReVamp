@@ -530,7 +530,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 20px;
+  padding: var(--space-4) var(--space-6);   /* 2 — taller to fit much bigger scores */
   background: rgba(3,3,13,0.65);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
@@ -549,16 +549,16 @@ body {
 
 .hud-score-name {
   font-family: var(--font-body);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--color-ink);              /* A — was ink-3 */
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .hud-score-val {
   font-family: var(--font-display);
-  font-size: var(--text-3xl);           /* 2 — bumped from 2xl */
+  font-size: 4.5rem;                    /* 2 — much bigger */
   font-weight: 800;
   letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
@@ -582,11 +582,11 @@ body {
 
 .hud-round {
   font-family: var(--font-body);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--color-ink);              /* B — was ink-3 */
-  font-weight: 600;
+  font-weight: 700;
   flex: 1;
   text-align: center;
 }
@@ -1356,15 +1356,15 @@ body {
   .mode-card .title { font-size: var(--text-base); }
   .mode-card .desc  { font-size: var(--text-xs); }
 
-  /* Topbar — tighter on phones */
+  /* Topbar — taller on phones to fit larger score */
   .hud-topbar {
-    height: 52px;
-    padding: 0 var(--space-3);
+    height: auto;
+    padding: var(--space-3) var(--space-3);
     font-size: var(--text-sm);
   }
 
   .hud-score-val {
-    font-size: 2rem;                  /* 2 — was 1.5rem, scaled to match new desktop bump */
+    font-size: 3rem;                  /* 2 — much bigger on mobile too */
   }
 
   .hud-round {
