@@ -28,8 +28,17 @@ app.post('/pvc/streak', async (req, res) => {
   if (typeof name !== 'string' || typeof streak !== 'number' || streak < 0) {
     return res.status(400).json({ error: 'invalid payload' });
   }
-  const entry = pvcLeaderboard.submit(name, Math.floor(streak));
+  // Await the save so the client doesn't get a response until the
+  // submission is durable on Blob (or file). Adds ~100-200ms but avoids
+  // losing in-flight writes when the server is shut down for redeploy.
+  const entry = await pvcLeaderboard.submit(name, Math.floor(streak));
   res.json({ entry, top: pvcLeaderboard.getTop(20) });
+});
+
+// Diagnostics — confirms Blob token is set and shows last save outcome
+app.get('/pvc/debug', async (_req, res) => {
+  await pvcLeaderboard.whenReady();
+  res.json(pvcLeaderboard.getDebug());
 });
 
 const httpServer = createServer(app);
