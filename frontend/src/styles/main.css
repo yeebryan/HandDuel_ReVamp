@@ -620,7 +620,8 @@ body {
 /* ── CPU panel (floating top-right) ────────────── */
 #cpu-panel {
   position: absolute;
-  top: 68px; right: 20px;
+  /* Sits below the topbar — topbar is ~120px now (4.5rem score + padding) */
+  top: 132px; right: 20px;
   width: 104px;
   background: rgba(3,3,13,0.78);
   border: 1px solid rgba(62,255,216,0.12);
@@ -1381,9 +1382,9 @@ body {
     padding: var(--space-1) var(--space-3);
   }
 
-  /* CPU panel — smaller, stay top-right */
+  /* CPU panel — smaller, stay top-right, below the taller mobile topbar */
   #cpu-panel {
-    top: 58px;
+    top: 108px;
     right: 10px;
     width: 82px;
     padding: var(--space-2) var(--space-3);
