@@ -75,21 +75,28 @@ export class PvCLeaderboard {
     }
   }
 
-  private save(): void {
+  /** Last save attempt outcome — exposed via debug endpoint */
+  lastSaveAt: number | null = null;
+  lastSaveError: string | null = null;
+
+  private async save(): Promise<void> {
     const json = JSON.stringify([...this.best.values()]);
 
     if (this.blobToken) {
-      // Fire-and-forget — don't make the API request wait on blob I/O.
-      // allowOverwrite + addRandomSuffix:false keeps the same canonical URL.
-      put(BLOB_PATHNAME, json, {
-        access: 'public',
-        token: this.blobToken,
-        contentType: 'application/json',
-        allowOverwrite: true,
-        addRandomSuffix: false,
-      }).catch((err) => {
+      try {
+        await put(BLOB_PATHNAME, json, {
+          access: 'public',
+          token: this.blobToken,
+          contentType: 'application/json',
+          allowOverwrite: true,
+          addRandomSuffix: false,
+        });
+        this.lastSaveAt = Date.now();
+        this.lastSaveError = null;
+      } catch (err) {
+        this.lastSaveError = String(err);
         console.warn('[PvCLeaderboard] Blob save failed:', err);
-      });
+      }
       return;
     }
 
@@ -97,21 +104,36 @@ export class PvCLeaderboard {
     try {
       mkdirSync(dirname(this.filePath), { recursive: true });
       writeFileSync(this.filePath, json, 'utf8');
+      this.lastSaveAt = Date.now();
+      this.lastSaveError = null;
     } catch (err) {
+      this.lastSaveError = String(err);
       console.warn(`[PvCLeaderboard] failed to save ${this.filePath}:`, err);
     }
   }
 
-  submit(name: string, streak: number): PvCEntry {
+  async submit(name: string, streak: number): Promise<PvCEntry> {
     const trimmed = name.trim().slice(0, 20) || 'Anon';
     const existing = this.best.get(trimmed);
     if (!existing || streak > existing.streak) {
       const entry: PvCEntry = { name: trimmed, streak, timestamp: Date.now() };
       this.best.set(trimmed, entry);
-      this.save();
+      // Await the write so we know it landed before responding to client
+      await this.save();
       return entry;
     }
     return existing;
+  }
+
+  /** Diagnostics for the /pvc/debug endpoint */
+  getDebug() {
+    return {
+      blobTokenPresent: Boolean(this.blobToken),
+      filePath: this.filePath,
+      inMemoryCount: this.best.size,
+      lastSaveAt: this.lastSaveAt,
+      lastSaveError: this.lastSaveError,
+    };
   }
 
   getTop(n = 10): PvCEntry[] {
