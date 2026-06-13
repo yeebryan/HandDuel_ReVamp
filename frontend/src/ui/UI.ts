@@ -348,6 +348,23 @@ export class UI {
     this.setCPUGesture('❓', '');
     this.setGestureHint('No hand detected');
     this.updateHoldRing(0, null);
+    // Reset HUD-element visibility so a previous mode's hidden state doesn't
+    // carry over into the next mode.
+    this.setCPUPanelVisible(true);
+    this.setHoldRingVisible(true);
+  }
+
+  /** Show/hide the floating top-right CPU panel. Hide for PvP modes. */
+  setCPUPanelVisible(visible: boolean): void {
+    if (visible) this.show(this.cpuPanelEl);
+    else this.hide(this.cpuPanelEl);
+  }
+
+  /** Show/hide the bottom-bar hold-to-start ring. Hide for modes that
+   *  auto-advance rounds (PvP Local). */
+  setHoldRingVisible(visible: boolean): void {
+    if (visible) this.show(this.holdRingWrap);
+    else this.hide(this.holdRingWrap);
   }
 
   onModeSelect(cb: (mode: GameMode) => void): void {

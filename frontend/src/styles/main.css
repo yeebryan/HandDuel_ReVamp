@@ -1407,10 +1407,12 @@ body {
   #gesture-pill {
     font-size: var(--text-sm);
     padding: var(--space-1) var(--space-4);
+    min-width: 0;                     /* #11 — let it shrink to content on phones */
   }
 
   .hint-text {
     font-size: var(--text-xs);        /* G — was 0.6rem (illegible); raised + kept white */
+    min-width: 0;                     /* #11 — let it shrink to content on phones */
   }
 
   /* Countdown */
@@ -1448,4 +1450,10 @@ body {
   #mode-select h1 {
     font-size: var(--text-2xl);
   }
+}
+
+/* #11 — below 400px the bottom bar can't fit pill + hint together. Hide
+   the secondary status text and let the pill carry the gesture state. */
+@media (max-width: 400px) {
+  .hint-text { display: none; }
 }

@@ -98,12 +98,13 @@ export class App {
             // lands first, then the verdict.
             setTimeout(() => {
               this.ui.hideLockedIn();
-              this.ui.showRevealPanel(p1g, p2g, winner);
+              this.ui.showRevealPanel(p1g, p2g, winner, 'CPU');
             }, 600);
           },
-          onScore: (p1, p2, round) => {
+          onScore: (p1, p2) => {
+            // #5 — In PvC, the topbar shows STREAK (not ROUND). Skip the
+            // setRound call so it doesn't flicker over the streak display.
             this.ui.setScore(p1, p2);
-            this.ui.setRound(round);
           },
           onGestureFeed: (g) => {
             this.ui.updateGesture(g);
@@ -121,21 +122,42 @@ export class App {
 
     } else if (mode === 'pvp-local') {
       this.ui.showGameHud('PLAYER 1', 'PLAYER 2');
-      this.ui.setPhaseHint('P1 = left hand · P2 = right hand');
+      // #3, #6 — no CPU, no hold-to-start in local PvP
+      this.ui.setCPUPanelVisible(false);
+      this.ui.setHoldRingVisible(false);
+      // #8 — keep this hint visible across all phases so first-time
+      // players don't lose the instructions on countdown.
+      const persistentHint = 'P1 = left hand · P2 = right hand';
+      this.ui.setPhaseHint(persistentHint);
       this.activeMode = new PvPLocalMode(
         this.scene, this.detector, this.p1Video,
         {
-          onPhase: (phase, cd) => this.handlePhase(phase, cd),
-          onResult: (_p1g, _p2g, winner) => {
+          onPhase: (phase, cd) => {
+            this.handlePhase(phase, cd);
+            // Restore the persistent hint after handlePhase clears it
+            if (phase !== 'show') this.ui.setPhaseHint(persistentHint);
+          },
+          onResult: (p1g, p2g, winner) => {
             this.ui.flashScreen();
             if (winner === 1) this.ui.pulseScore(1);
             else if (winner === 2) this.ui.pulseScore(2);
+            // #7 — show LOCKED for whichever side had the hand that won/lost
+            // contextually. For PvP Local we pick p1's gesture as the lead.
+            this.ui.showLockedIn(winner === 2 ? p2g : p1g);
+            setTimeout(() => {
+              this.ui.hideLockedIn();
+              // #1 — pass PLAYER 2 as label, not the default 'CPU'
+              this.ui.showRevealPanel(p1g, p2g, winner, 'PLAYER 2');
+            }, 600);
             const label = winner === 0 ? 'DRAW!' : `PLAYER ${winner} WINS!`;
             const type  = winner === 0 ? 'draw' : 'win';
-            setTimeout(() => this.ui.showResult(label, type), 700);
+            setTimeout(() => this.ui.showResult(label, type), 1300);
           },
           onScore: (p1, p2, round) => { this.ui.setScore(p1, p2); this.ui.setRound(round); },
-          onMatchOver: (winner, p1, p2) => this.handleMatchOver(`PLAYER ${winner} WINS ${p1}–${p2}!`),
+          // #2 — match-over color reflects actual outcome (no per-player view here,
+          // both players see the same screen — keep 'win' for the celebration but
+          // include the loser's score so context is clear)
+          onMatchOver: (winner, p1, p2) => this.handleMatchOver(`PLAYER ${winner} WINS ${p1}–${p2}!`, 'win'),
           onGestureFeed: (p1g, p2g) => {
             this.ui.updateGesture(p1g, p2g);
             this.detector.drawLandmarks(this.landmarkCanvas, this.detector.lastRaw);
@@ -150,7 +172,9 @@ export class App {
         // User cancelled — bail out without showing the game HUD
         return;
       }
-      this.ui.showGameHud(playerName, '?');
+      this.ui.showGameHud(playerName, 'OPPONENT');
+      // #3 — no CPU in online PvP. Hold ring kept (player has to hold to ready).
+      this.ui.setCPUPanelVisible(false);
       this.ui.showConnecting('Connecting to server…');
 
       const onlineMode = new PvPOnlineMode(
@@ -166,26 +190,34 @@ export class App {
               this.handlePhase(phase, cd);
             }
           },
-          onResult: (_p1g, _p2g, winner) => {
+          onResult: (p1g, p2g, winner) => {
             this.roundCount++;
             this.ui.setRound(this.roundCount + 1);
             this.ui.flashScreen();
             if (winner === 1) this.ui.pulseScore(1);
             else if (winner === 2) this.ui.pulseScore(2);
+            // #7 — show captured gesture flash
+            this.ui.showLockedIn(p1g);
+            setTimeout(() => {
+              this.ui.hideLockedIn();
+              // #1 — label opponent as "OPPONENT" (real names not exchanged
+              // by current server protocol)
+              this.ui.showRevealPanel(p1g, p2g, winner, 'OPPONENT');
+            }, 600);
             const label = winner === 0 ? 'DRAW!' : winner === 1 ? 'YOU WIN!' : 'YOU LOSE!';
             const type  = winner === 0 ? 'draw' : winner === 1 ? 'win' : 'lose';
-            setTimeout(() => this.ui.showResult(label, type), 700);
+            setTimeout(() => this.ui.showResult(label, type), 1300);
           },
           onScore: (p1, p2) => this.ui.setScore(p1, p2),
           onMatchOver: (ev) => {
-            const msg = ev.winner === 1
+            // #2 — show correct color for the per-player outcome
+            const isWin = ev.winner === 1;
+            const msg = isWin
               ? `YOU WIN! 🔥 ${ev.consecutiveWins} streak!`
               : 'YOU LOSE — Better luck next time!';
-            this.handleMatchOver(msg);
-            // Re-queue winner automatically
-            if (ev.winner === 1) {
-              setTimeout(() => onlineMode.stop(), 3000);
-            }
+            this.handleMatchOver(msg, isWin ? 'win' : 'lose');
+            // #4 — removed dead setTimeout(stop) that "re-queued winner".
+            // returnToMenu in handleMatchOver already calls activeMode.stop().
           },
           onLeaderboard: (entries) => {
             // Don't pop the leaderboard mid-matchmaking if there's nothing
@@ -242,9 +274,9 @@ export class App {
     }
   }
 
-  private handleMatchOver(msg: string): void {
+  private handleMatchOver(msg: string, type: 'win' | 'lose' | 'draw' = 'win'): void {
     this.ui.setCountdown('');
-    this.ui.showResult(msg, 'win');
+    this.ui.showResult(msg, type);
     this.ui.setPhaseHint('Returning to menu…');
     setTimeout(() => this.returnToMenu(), 3500);
   }
