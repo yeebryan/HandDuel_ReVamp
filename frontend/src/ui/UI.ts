@@ -173,7 +173,8 @@ export class UI {
 <!-- Leaderboard (online competition + PvC view) -->
 <div id="leaderboard" class="hidden">
   <div class="modal-box lb-modal">
-    <h2>🔥 Top Streaks</h2>
+    <h2 id="leaderboard-title">🔥 Top Streaks</h2>
+    <div class="lb-subtitle" id="leaderboard-subtitle">Player vs CPU</div>
     <div id="leaderboard-list"></div>
     <button class="submit-btn ghost" id="leaderboard-close">Close</button>
   </div>
@@ -509,8 +510,16 @@ export class UI {
 
   // ─── Leaderboard ─────────────────────────────
 
-  showLeaderboard(entries: LeaderboardEntry[], currentName = ''): void {
+  /**
+   * Show the leaderboard.
+   * @param subtitle Which game mode this leaderboard is for, e.g.
+   *   "Player vs CPU" or "Online Competition". Shown beneath the title
+   *   so users know which mode produced these scores.
+   */
+  showLeaderboard(entries: LeaderboardEntry[], currentName = '', subtitle = 'Player vs CPU'): void {
     this.show(this.leaderboard);
+    const subtitleEl = this.root.querySelector('#leaderboard-subtitle') as HTMLElement;
+    if (subtitleEl) subtitleEl.textContent = subtitle;
     const list = this.root.querySelector('#leaderboard-list')!;
 
     if (entries.length === 0) {
@@ -538,8 +547,10 @@ export class UI {
   /** Shows the leaderboard modal immediately with a loading spinner —
    *  call before awaiting the API so the user sees feedback while the
    *  server (possibly cold) wakes up. */
-  showLeaderboardLoading(): void {
+  showLeaderboardLoading(subtitle = 'Player vs CPU'): void {
     this.show(this.leaderboard);
+    const subtitleEl = this.root.querySelector('#leaderboard-subtitle') as HTMLElement;
+    if (subtitleEl) subtitleEl.textContent = subtitle;
     const list = this.root.querySelector('#leaderboard-list')!;
     list.innerHTML = `
       <div class="lb-loading">

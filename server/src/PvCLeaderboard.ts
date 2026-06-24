@@ -84,8 +84,11 @@ export class PvCLeaderboard {
 
     if (this.blobToken) {
       try {
+        // Store was created as Private — access must match or put() throws
+        // "Cannot use public access on a private store". The token still
+        // governs reads/writes; this is purely about how the blob URL is signed.
         await put(BLOB_PATHNAME, json, {
-          access: 'public',
+          access: 'private',
           token: this.blobToken,
           contentType: 'application/json',
           allowOverwrite: true,
