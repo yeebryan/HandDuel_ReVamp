@@ -223,7 +223,7 @@ export class App {
             // Don't pop the leaderboard mid-matchmaking if there's nothing
             // to show — empty list is just noise and obscures "Finding opponent…"
             if (entries.length === 0) return;
-            this.ui.showLeaderboard(entries, playerName);
+            this.ui.showLeaderboard(entries, playerName, 'Online Competition');
           },
           onDisconnected: () => {
             this.ui.setPhaseHint('Opponent disconnected');

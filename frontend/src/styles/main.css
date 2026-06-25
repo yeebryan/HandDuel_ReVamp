@@ -891,7 +891,18 @@ body {
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--color-ink);
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-1);
+  text-align: center;
+}
+
+/* Subtitle — tells you which mode this leaderboard is for */
+.lb-subtitle {
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-ink-3);
+  margin-bottom: var(--space-4);
   text-align: center;
 }
 
