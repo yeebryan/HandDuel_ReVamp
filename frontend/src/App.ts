@@ -31,6 +31,7 @@ export class App {
     this.ui.onBack(() => this.returnToMenu());
     this.ui.onViewLeaderboard(() => this.viewPvCLeaderboard());
     this.ui.onLeaderboardClose(() => this.ui.hideLeaderboard());
+    this.ui.onHowToPlay(() => this.ui.showHowToPlay());
 
     // Replay any submissions queued from a previous session that failed
     // due to a cold-start or offline moment. Fire-and-forget — UI shouldn't
@@ -77,6 +78,7 @@ export class App {
 
     if (mode === 'pvc') {
       this.ui.showGameHud('YOU', 'CPU');
+      this.ui.showGameStartCue();
       this.activeMode = new PvCMode(
         this.scene, this.detector, this.p1Video,
         {
@@ -122,6 +124,7 @@ export class App {
 
     } else if (mode === 'pvp-local') {
       this.ui.showGameHud('PLAYER 1', 'PLAYER 2');
+      this.ui.showGameStartCue();
       // #3, #6 — no CPU, no hold-to-start in local PvP
       this.ui.setCPUPanelVisible(false);
       this.ui.setHoldRingVisible(false);
@@ -173,6 +176,7 @@ export class App {
         return;
       }
       this.ui.showGameHud(playerName, 'OPPONENT');
+      this.ui.showGameStartCue();
       // #3 — no CPU in online PvP. Hold ring kept (player has to hold to ready).
       this.ui.setCPUPanelVisible(false);
       this.ui.showConnecting('Connecting to server…');
@@ -338,6 +342,7 @@ export class App {
     this.ui.setCPUGesture('❓', '');
     this.ui.hideLeaderboard();
     this.ui.hideConnecting();
+    this.ui.hideGameStartCue();
     this.ui.showModeSelect();
   }
 
