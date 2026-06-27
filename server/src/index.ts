@@ -38,7 +38,7 @@ app.post('/pvc/streak', async (req, res) => {
 // Diagnostics — confirms Blob token is set and shows last save outcome
 app.get('/pvc/debug', async (_req, res) => {
   await pvcLeaderboard.whenReady();
-  res.json(pvcLeaderboard.getDebug());
+  res.json(await pvcLeaderboard.getDebug());
 });
 
 const httpServer = createServer(app);
