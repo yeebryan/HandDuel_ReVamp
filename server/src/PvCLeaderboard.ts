@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
 import { dirname } from 'path';
-import { put, list } from '@vercel/blob';
+import { put, list, head } from '@vercel/blob';
 
 export interface PvCEntry {
   name: string;
@@ -36,6 +36,10 @@ export class PvCLeaderboard {
   /** Resolves when the initial load (from Blob or file) is complete. */
   whenReady(): Promise<void> { return this.ready; }
 
+  /** Last load attempt outcome — surfaced via /pvc/debug for diagnostics */
+  lastLoadAt: number | null = null;
+  lastLoadError: string | null = null;
+
   private async load(): Promise<void> {
     if (this.blobToken) {
       try {
@@ -43,18 +47,36 @@ export class PvCLeaderboard {
         const match = blobs.find((b) => b.pathname === BLOB_PATHNAME);
         if (!match) {
           console.log(`[PvCLeaderboard] no existing blob at ${BLOB_PATHNAME}, starting fresh`);
+          this.lastLoadAt = Date.now();
           return;
         }
-        const res = await fetch(match.url);
+
+        // For a PRIVATE blob, match.url is NOT directly fetchable without
+        // authentication. head(url, { token }) returns a signed downloadUrl
+        // that is short-lived but readable by plain fetch().
+        const meta = await head(match.url, { token: this.blobToken });
+        const downloadUrl = meta.downloadUrl ?? match.url;
+
+        const res = await fetch(downloadUrl);
+        if (!res.ok) {
+          throw new Error(`Blob fetch returned HTTP ${res.status} ${res.statusText}`);
+        }
         const entries = (await res.json()) as PvCEntry[];
+        if (!Array.isArray(entries)) {
+          throw new Error(`Blob body was not an array (got ${typeof entries})`);
+        }
+
         for (const e of entries) {
           if (e && typeof e.name === 'string' && typeof e.streak === 'number') {
             this.best.set(e.name, e);
           }
         }
         console.log(`[PvCLeaderboard] loaded ${this.best.size} entries from Blob`);
+        this.lastLoadAt = Date.now();
+        this.lastLoadError = null;
         return;
       } catch (err) {
+        this.lastLoadError = String(err);
         console.warn('[PvCLeaderboard] Blob load failed, falling back to file:', err);
       }
     }
@@ -149,6 +171,8 @@ export class PvCLeaderboard {
       blobTokenPresent: Boolean(this.blobToken),
       filePath: this.filePath,
       inMemoryCount: this.best.size,
+      lastLoadAt: this.lastLoadAt,
+      lastLoadError: this.lastLoadError,
       lastSaveAt: this.lastSaveAt,
       lastSaveError: this.lastSaveError,
       expectedPathname: BLOB_PATHNAME,
