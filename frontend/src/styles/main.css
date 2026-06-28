@@ -454,8 +454,16 @@ body {
   outline-offset: 3px;
 }
 
-.lb-view-btn {
+/* Row of secondary buttons under the mode grid (Leaderboard + How to Play) */
+.mode-actions {
   margin-top: 32px;
+  display: flex;
+  gap: var(--space-3);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.lb-view-btn {
   padding: 12px 28px;
   background: transparent;
   color: var(--color-fg, #fff);
@@ -1467,4 +1475,129 @@ body {
    the secondary status text and let the pill carry the gesture state. */
 @media (max-width: 400px) {
   .hint-text { display: none; }
+}
+
+/* ────────────────────────────────────────────── */
+/* HOW TO PLAY MODAL                              */
+/* ────────────────────────────────────────────── */
+#how-to-play-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 1100;
+  pointer-events: auto;
+}
+#how-to-play-modal.hidden { display: none; }
+
+.htp-modal {
+  width: min(460px, 92vw);
+  max-height: 86vh;
+  overflow-y: auto;
+}
+
+.htp-steps {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  width: 100%;
+  padding: 0;
+  margin: 0;
+}
+
+.htp-steps li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  text-align: left;
+}
+
+.htp-icon {
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  background: var(--color-paper-2);
+  border: 1px solid var(--color-border-2);
+  border-radius: var(--radius-md);
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--color-accent);
+}
+
+.htp-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  color: var(--color-ink-2);
+  line-height: 1.5;
+}
+.htp-text strong {
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+/* ────────────────────────────────────────────── */
+/* GAME-START INLINE CUE                          */
+/* ────────────────────────────────────────────── */
+.game-start-cue {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  background: rgba(3, 3, 13, 0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5) var(--space-6);
+  pointer-events: none;
+  z-index: 21;
+  transition: opacity 0.45s var(--ease-out);
+  animation: cue-in 0.35s var(--ease-out);
+}
+.game-start-cue.hidden { display: none; }
+.game-start-cue.fade-out { opacity: 0; }
+
+.cue-line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  color: var(--color-ink);
+  font-weight: 500;
+}
+.cue-line strong {
+  font-family: var(--font-display);
+  font-weight: 800;
+  color: var(--color-accent);
+  letter-spacing: 0.04em;
+}
+.cue-emoji { font-size: 1.6rem; }
+.cue-arrow {
+  font-size: 1.4rem;
+  color: var(--color-ink-3);
+  line-height: 1;
+}
+
+@keyframes cue-in {
+  from { transform: translate(-50%, -40%) scale(0.92); opacity: 0; }
+  to   { transform: translate(-50%, -50%) scale(1);    opacity: 1; }
 }

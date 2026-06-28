@@ -99,7 +99,48 @@ export class UI {
       <div class="mode-desc">Online · streak leaderboard</div>
     </button>
   </div>
-  <button class="lb-view-btn" id="view-leaderboard-btn">🏆 View Leaderboard</button>
+  <div class="mode-actions">
+    <button class="lb-view-btn" id="view-leaderboard-btn">🏆 View Leaderboard</button>
+    <button class="lb-view-btn" id="how-to-play-btn">ⓘ How to Play</button>
+  </div>
+</div>
+
+<!-- How to Play modal — accessible from mode select -->
+<div id="how-to-play-modal" class="hidden">
+  <div class="modal-box htp-modal">
+    <h2>How to Play</h2>
+    <ol class="htp-steps">
+      <li>
+        <div class="htp-icon">🖐️</div>
+        <div class="htp-text">
+          <strong>Hold a gesture</strong>
+          Show ✊ rock, 🖐️ paper, or ✌️ scissors to the camera. The ring fills as you hold.
+        </div>
+      </li>
+      <li>
+        <div class="htp-icon">3·2·1</div>
+        <div class="htp-text">
+          <strong>Watch the countdown</strong>
+          When the ring fills, the round begins: 3 → 2 → 1 → SHOOT.
+        </div>
+      </li>
+      <li>
+        <div class="htp-icon">⚡</div>
+        <div class="htp-text">
+          <strong>Lock in at SHOOT</strong>
+          Your gesture is captured exactly when "SHOOT!" appears. Commit by then — not at "1".
+        </div>
+      </li>
+      <li>
+        <div class="htp-icon">🔥</div>
+        <div class="htp-text">
+          <strong>Build your streak</strong>
+          In Player vs CPU, one loss ends your run. Submit your name to the global leaderboard.
+        </div>
+      </li>
+    </ol>
+    <button class="submit-btn" id="how-to-play-close">Got it</button>
+  </div>
 </div>
 
 <!-- Game HUD -->
@@ -135,6 +176,12 @@ export class UI {
     <!-- Captured-gesture flash: shows "LOCKED IN ✊" briefly at SHOOT so
          the player knows what got captured, even if their hand moves after -->
     <div class="locked-in-display hidden" id="locked-in-display"></div>
+    <!-- Inline 2-second tutorial cue shown at game start; auto-dismisses -->
+    <div class="game-start-cue hidden" id="game-start-cue">
+      <div class="cue-line"><span class="cue-emoji">🖐️</span> Hold a gesture</div>
+      <div class="cue-arrow">↓</div>
+      <div class="cue-line"><span class="cue-emoji">⚡</span> Lock in at <strong>SHOOT</strong></div>
+    </div>
   </div>
 
   <!-- Reveal panel: side-by-side after each round -->
@@ -383,6 +430,34 @@ export class UI {
 
   onViewLeaderboard(cb: () => void): void {
     this.root.querySelector('#view-leaderboard-btn')!.addEventListener('click', cb);
+  }
+
+  // ─── How to Play modal ──────────────────────
+
+  onHowToPlay(cb: () => void): void {
+    this.root.querySelector('#how-to-play-btn')!.addEventListener('click', cb);
+    this.root.querySelector('#how-to-play-close')!.addEventListener('click', () => this.hideHowToPlay());
+  }
+
+  showHowToPlay(): void {
+    this.show(this.root.querySelector('#how-to-play-modal') as HTMLElement);
+  }
+
+  hideHowToPlay(): void {
+    this.hide(this.root.querySelector('#how-to-play-modal') as HTMLElement);
+  }
+
+  /** Show the 2-second inline cue at game start. Auto-dismisses. */
+  showGameStartCue(): void {
+    const el = this.root.querySelector('#game-start-cue') as HTMLElement;
+    el.classList.remove('hidden', 'fade-out');
+    // Trigger fade-out after 1.7s, then hide at 2.2s
+    setTimeout(() => el.classList.add('fade-out'), 1700);
+    setTimeout(() => el.classList.add('hidden'), 2200);
+  }
+
+  hideGameStartCue(): void {
+    (this.root.querySelector('#game-start-cue') as HTMLElement).classList.add('hidden');
   }
 
   // ─── HUD updates ─────────────────────────────
