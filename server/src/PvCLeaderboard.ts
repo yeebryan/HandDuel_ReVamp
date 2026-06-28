@@ -129,13 +129,31 @@ export class PvCLeaderboard {
   }
 
   /** Diagnostics for the /pvc/debug endpoint */
-  getDebug() {
+  async getDebug() {
+    let blobList: unknown = null;
+    let listError: string | null = null;
+    if (this.blobToken) {
+      try {
+        const result = await list({ token: this.blobToken });
+        blobList = result.blobs.map((b) => ({
+          pathname: b.pathname,
+          url: b.url,
+          size: b.size,
+          uploadedAt: b.uploadedAt,
+        }));
+      } catch (err) {
+        listError = String(err);
+      }
+    }
     return {
       blobTokenPresent: Boolean(this.blobToken),
       filePath: this.filePath,
       inMemoryCount: this.best.size,
       lastSaveAt: this.lastSaveAt,
       lastSaveError: this.lastSaveError,
+      expectedPathname: BLOB_PATHNAME,
+      blobList,           // what list() actually returns
+      listError,
     };
   }
 
