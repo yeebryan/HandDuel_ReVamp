@@ -1,6 +1,4 @@
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
-import { dirname } from 'path';
-import { put, list, head } from '@vercel/blob';
+import { Pool } from 'pg';
 
 export interface PvCEntry {
   name: string;
@@ -8,182 +6,146 @@ export interface PvCEntry {
   timestamp: number;
 }
 
-const BLOB_PATHNAME = 'pvc-leaderboard.json';
-
 /**
  * Tracks best win-streaks vs CPU. Only stores a player's *highest* streak.
  *
  * Persistence strategy:
- *   - If BLOB_READ_WRITE_TOKEN is set → use Vercel Blob (durable across redeploys,
+ *   - If DATABASE_URL is set → use Neon Postgres (durable across redeploys,
  *     spin-downs, and platform restarts).
- *   - Otherwise → fall back to a local JSON file (useful for `npm run dev`).
+ *   - Otherwise → fall back to an in-memory map (useful for `npm run dev`
+ *     without a DB connection).
  *
- * In-memory map is the runtime source of truth; writes are mirrored to the
- * backing store so the next process boot can hydrate from it.
+ * The table is created on first boot if it doesn't exist.
  */
 export class PvCLeaderboard {
-  private best = new Map<string, PvCEntry>();
-  private filePath: string;
-  private blobToken: string | undefined;
+  private pool: Pool | null = null;
+  private fallback = new Map<string, PvCEntry>();
   private ready: Promise<void>;
 
-  constructor(filePath = process.env['PVC_DATA_FILE'] ?? './data/pvc-leaderboard.json') {
-    this.filePath = filePath;
-    this.blobToken = process.env['BLOB_READ_WRITE_TOKEN'];
-    this.ready = this.load();
-  }
-
-  /** Resolves when the initial load (from Blob or file) is complete. */
-  whenReady(): Promise<void> { return this.ready; }
-
-  /** Last load attempt outcome — surfaced via /pvc/debug for diagnostics */
+  /** Last load/init outcome — surfaced via /pvc/debug for diagnostics */
   lastLoadAt: number | null = null;
   lastLoadError: string | null = null;
-
-  private async load(): Promise<void> {
-    if (this.blobToken) {
-      try {
-        const { blobs } = await list({ prefix: BLOB_PATHNAME, token: this.blobToken });
-        const match = blobs.find((b) => b.pathname === BLOB_PATHNAME);
-        if (!match) {
-          console.log(`[PvCLeaderboard] no existing blob at ${BLOB_PATHNAME}, starting fresh`);
-          this.lastLoadAt = Date.now();
-          return;
-        }
-
-        // For a PRIVATE blob, match.url is NOT directly fetchable without
-        // authentication. head(url, { token }) returns a signed downloadUrl
-        // that is short-lived but readable by plain fetch().
-        const meta = await head(match.url, { token: this.blobToken });
-        const downloadUrl = meta.downloadUrl ?? match.url;
-
-        const res = await fetch(downloadUrl);
-        if (!res.ok) {
-          throw new Error(`Blob fetch returned HTTP ${res.status} ${res.statusText}`);
-        }
-        const entries = (await res.json()) as PvCEntry[];
-        if (!Array.isArray(entries)) {
-          throw new Error(`Blob body was not an array (got ${typeof entries})`);
-        }
-
-        for (const e of entries) {
-          if (e && typeof e.name === 'string' && typeof e.streak === 'number') {
-            this.best.set(e.name, e);
-          }
-        }
-        console.log(`[PvCLeaderboard] loaded ${this.best.size} entries from Blob`);
-        this.lastLoadAt = Date.now();
-        this.lastLoadError = null;
-        return;
-      } catch (err) {
-        this.lastLoadError = String(err);
-        console.warn('[PvCLeaderboard] Blob load failed, falling back to file:', err);
-      }
-    }
-
-    // File fallback
-    try {
-      if (!existsSync(this.filePath)) return;
-      const raw = readFileSync(this.filePath, 'utf8');
-      const entries = JSON.parse(raw) as PvCEntry[];
-      for (const e of entries) {
-        if (e && typeof e.name === 'string' && typeof e.streak === 'number') {
-          this.best.set(e.name, e);
-        }
-      }
-      console.log(`[PvCLeaderboard] loaded ${this.best.size} entries from ${this.filePath}`);
-    } catch (err) {
-      console.warn(`[PvCLeaderboard] failed to load ${this.filePath}:`, err);
-    }
-  }
-
-  /** Last save attempt outcome — exposed via debug endpoint */
   lastSaveAt: number | null = null;
   lastSaveError: string | null = null;
 
-  private async save(): Promise<void> {
-    const json = JSON.stringify([...this.best.values()]);
+  constructor() {
+    const dbUrl = process.env['DATABASE_URL'];
+    if (dbUrl) {
+      this.pool = new Pool({ connectionString: dbUrl, ssl: { rejectUnauthorized: false } });
+    }
+    this.ready = this.init();
+  }
 
-    if (this.blobToken) {
-      try {
-        // Store was created as Private — access must match or put() throws
-        // "Cannot use public access on a private store". The token still
-        // governs reads/writes; this is purely about how the blob URL is signed.
-        await put(BLOB_PATHNAME, json, {
-          access: 'private',
-          token: this.blobToken,
-          contentType: 'application/json',
-          allowOverwrite: true,
-          addRandomSuffix: false,
-        });
-        this.lastSaveAt = Date.now();
-        this.lastSaveError = null;
-      } catch (err) {
-        this.lastSaveError = String(err);
-        console.warn('[PvCLeaderboard] Blob save failed:', err);
-      }
+  whenReady(): Promise<void> { return this.ready; }
+
+  private async init(): Promise<void> {
+    if (!this.pool) {
+      console.log('[PvCLeaderboard] No DATABASE_URL — using in-memory fallback');
+      this.lastLoadAt = Date.now();
       return;
     }
-
-    // File fallback
     try {
-      mkdirSync(dirname(this.filePath), { recursive: true });
-      writeFileSync(this.filePath, json, 'utf8');
-      this.lastSaveAt = Date.now();
-      this.lastSaveError = null;
+      await this.pool.query(`
+        CREATE TABLE IF NOT EXISTS pvc_leaderboard (
+          name        TEXT PRIMARY KEY,
+          streak      INTEGER NOT NULL DEFAULT 0,
+          timestamp   BIGINT  NOT NULL DEFAULT 0
+        )
+      `);
+      console.log('[PvCLeaderboard] Postgres ready');
+      this.lastLoadAt = Date.now();
+      this.lastLoadError = null;
     } catch (err) {
-      this.lastSaveError = String(err);
-      console.warn(`[PvCLeaderboard] failed to save ${this.filePath}:`, err);
+      this.lastLoadError = String(err);
+      console.warn('[PvCLeaderboard] Postgres init failed:', err);
     }
   }
 
   async submit(name: string, streak: number): Promise<PvCEntry> {
     const trimmed = name.trim().slice(0, 20) || 'Anon';
-    const existing = this.best.get(trimmed);
+    const timestamp = Date.now();
+
+    if (this.pool) {
+      try {
+        // Upsert: insert or update only if new streak is higher
+        await this.pool.query(
+          `INSERT INTO pvc_leaderboard (name, streak, timestamp)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (name) DO UPDATE
+             SET streak    = GREATEST(pvc_leaderboard.streak, EXCLUDED.streak),
+                 timestamp = CASE
+                               WHEN EXCLUDED.streak > pvc_leaderboard.streak
+                               THEN EXCLUDED.timestamp
+                               ELSE pvc_leaderboard.timestamp
+                             END`,
+          [trimmed, streak, timestamp],
+        );
+        this.lastSaveAt = Date.now();
+        this.lastSaveError = null;
+        const res = await this.pool.query<{ name: string; streak: string; timestamp: string }>(
+          'SELECT * FROM pvc_leaderboard WHERE name = $1',
+          [trimmed],
+        );
+        const row = res.rows[0];
+        return { name: row.name, streak: Number(row.streak), timestamp: Number(row.timestamp) };
+      } catch (err) {
+        this.lastSaveError = String(err);
+        console.warn('[PvCLeaderboard] Postgres submit failed:', err);
+      }
+    }
+
+    // In-memory fallback
+    const existing = this.fallback.get(trimmed);
     if (!existing || streak > existing.streak) {
-      const entry: PvCEntry = { name: trimmed, streak, timestamp: Date.now() };
-      this.best.set(trimmed, entry);
-      // Await the write so we know it landed before responding to client
-      await this.save();
+      const entry: PvCEntry = { name: trimmed, streak, timestamp };
+      this.fallback.set(trimmed, entry);
+      this.lastSaveAt = Date.now();
       return entry;
     }
     return existing;
   }
 
-  /** Diagnostics for the /pvc/debug endpoint */
-  async getDebug() {
-    let blobList: unknown = null;
-    let listError: string | null = null;
-    if (this.blobToken) {
+  async getTop(n = 10): Promise<PvCEntry[]> {
+    if (this.pool) {
       try {
-        const result = await list({ token: this.blobToken });
-        blobList = result.blobs.map((b) => ({
-          pathname: b.pathname,
-          url: b.url,
-          size: b.size,
-          uploadedAt: b.uploadedAt,
+        const res = await this.pool.query<{ name: string; streak: string; timestamp: string }>(
+          'SELECT * FROM pvc_leaderboard ORDER BY streak DESC, timestamp ASC LIMIT $1',
+          [n],
+        );
+        return res.rows.map((r) => ({
+          name: r.name,
+          streak: Number(r.streak),
+          timestamp: Number(r.timestamp),
         }));
       } catch (err) {
-        listError = String(err);
+        console.warn('[PvCLeaderboard] Postgres getTop failed:', err);
+      }
+    }
+    return [...this.fallback.values()]
+      .sort((a, b) => b.streak - a.streak || a.timestamp - b.timestamp)
+      .slice(0, n);
+  }
+
+  async getDebug() {
+    let rowCount: number | null = null;
+    let dbError: string | null = null;
+    if (this.pool) {
+      try {
+        const res = await this.pool.query('SELECT COUNT(*) as count FROM pvc_leaderboard');
+        rowCount = Number(res.rows[0].count);
+      } catch (err) {
+        dbError = String(err);
       }
     }
     return {
-      blobTokenPresent: Boolean(this.blobToken),
-      filePath: this.filePath,
-      inMemoryCount: this.best.size,
+      mode: this.pool ? 'postgres' : 'in-memory-fallback',
+      dbConnected: Boolean(this.pool),
+      rowCount,
+      dbError,
       lastLoadAt: this.lastLoadAt,
       lastLoadError: this.lastLoadError,
       lastSaveAt: this.lastSaveAt,
       lastSaveError: this.lastSaveError,
-      expectedPathname: BLOB_PATHNAME,
-      blobList,           // what list() actually returns
-      listError,
     };
-  }
-
-  getTop(n = 10): PvCEntry[] {
-    return [...this.best.values()]
-      .sort((a, b) => b.streak - a.streak || a.timestamp - b.timestamp)
-      .slice(0, n);
   }
 }
