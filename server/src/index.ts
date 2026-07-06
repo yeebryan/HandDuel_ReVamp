@@ -2,6 +2,8 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
+import helmet from 'helmet';
+import { rateLimit } from 'express-rate-limit';
 import { GameRoom } from './GameRoom.js';
 import { Leaderboard } from './Leaderboard.js';
 import { PvCLeaderboard } from './PvCLeaderboard.js';
@@ -12,21 +14,60 @@ const CLIENT_ORIGIN = process.env['CLIENT_ORIGIN'] ?? 'http://localhost:5173';
 const pvcLeaderboard = new PvCLeaderboard();
 
 const app = express();
+app.use(helmet());
 app.use(cors({ origin: CLIENT_ORIGIN }));
 app.use(express.json());
-app.get('/health', (_req, res) => res.json({ ok: true }));
+
+// Rate limiter for streak submissions — 10 per IP per 15 minutes
+const streakLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many submissions — try again in 15 minutes' },
+});
+
+// Real health check — pings the DB so Render restarts if it's broken
+app.get('/health', async (_req, res) => {
+  try {
+    await pvcLeaderboard.whenReady();
+    const debug = await pvcLeaderboard.getDebug();
+    if (debug.dbConnected) {
+      res.json({ ok: true, db: 'connected' });
+    } else {
+      res.status(503).json({ ok: false, db: 'not connected' });
+    }
+  } catch {
+    res.status(503).json({ ok: false, db: 'error' });
+  }
+});
+
 app.get('/leaderboard', (_req, res) => res.json(leaderboard.getTop(20)));
 app.get('/leaderboard/pvc', async (_req, res) => {
   await pvcLeaderboard.whenReady();
   res.json(await pvcLeaderboard.getTop(20));
 });
-app.post('/pvc/streak', async (req, res) => {
+app.post('/pvc/streak', streakLimiter, async (req, res) => {
   await pvcLeaderboard.whenReady();
   const { name, streak } = req.body ?? {};
-  if (typeof name !== 'string' || typeof streak !== 'number' || streak < 0) {
+
+  // Server-side validation — clients can be bypassed, server cannot
+  if (typeof name !== 'string' || typeof streak !== 'number') {
     return res.status(400).json({ error: 'invalid payload' });
   }
-  const entry = await pvcLeaderboard.submit(name, Math.floor(streak));
+  const trimmedName = name.trim();
+  if (trimmedName.length === 0) {
+    return res.status(400).json({ error: 'name cannot be empty' });
+  }
+  if (trimmedName.length > 20) {
+    return res.status(400).json({ error: 'name too long (max 20 chars)' });
+  }
+  const flooredStreak = Math.floor(streak);
+  if (flooredStreak < 1 || flooredStreak > 999) {
+    return res.status(400).json({ error: 'streak out of range' });
+  }
+
+  const entry = await pvcLeaderboard.submit(trimmedName, flooredStreak);
   res.json({ entry, top: await pvcLeaderboard.getTop(20) });
 });
 
