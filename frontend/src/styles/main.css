@@ -405,6 +405,11 @@ body {
   margin-top: calc(var(--space-2) * -1);
 }
 
+/* Hidden PvP mode buttons — still in DOM so routing works, just invisible */
+.mode-btn.mode-hidden {
+  display: none;
+}
+
 /* Mode cards — elevated solid surfaces, no glass */
 .mode-grid {
   display: grid;
@@ -413,6 +418,12 @@ body {
   max-width: 760px;
   width: 90%;
   perspective: 1000px;
+}
+
+/* When PvP buttons are hidden, centre the single PvC card */
+.mode-grid:has(.mode-hidden) {
+  grid-template-columns: 1fr;
+  max-width: 360px;
 }
 
 .mode-btn {
@@ -1365,7 +1376,17 @@ body {
     grid-template-columns: 1fr;
     gap: var(--space-3);
     padding: var(--space-3);
-    max-width: 340px;
+    max-width: 320px;
+    width: 88%;
+  }
+
+  /* Single visible card fills nicely on mobile */
+  .mode-grid:has(.mode-hidden) {
+    max-width: 320px;
+  }
+
+  .mode-btn {
+    padding: var(--space-6) var(--space-5);
   }
 
   .mode-card {
@@ -1375,6 +1396,12 @@ body {
   .mode-card .icon { font-size: 1.8rem; }
   .mode-card .title { font-size: var(--text-base); }
   .mode-card .desc  { font-size: var(--text-xs); }
+
+  /* Mode select title — tighter on mobile */
+  #mode-select {
+    gap: var(--space-5);
+    padding: var(--space-6) var(--space-4);
+  }
 
   /* Topbar — taller on phones to fit larger score */
   .hud-topbar {
