@@ -210,7 +210,7 @@ export class App {
           onPhase: (phase, cd) => {
             if (phase === 'matched') {
               this.ui.hideConnecting();
-              this.ui.setPhaseHint('Matched! Get ready…');
+              this.ui.setPhaseHint('First to 2 wins! Hold a gesture to ready up.');
             } else if (phase === 'waiting') {
               this.ui.showConnecting('Finding opponent…');
             } else {
