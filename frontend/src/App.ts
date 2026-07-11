@@ -232,9 +232,7 @@ export class App {
               // by current server protocol)
               this.ui.showRevealPanel(p1g, p2g, winner, opponentName);
             }, 600);
-            const label = winner === 0 ? 'DRAW!' : winner === 1 ? 'YOU WIN!' : 'YOU LOSE!';
-            const type  = winner === 0 ? 'draw' : winner === 1 ? 'win' : 'lose';
-            setTimeout(() => this.ui.showResult(label, type), 1300);
+            // Reveal panel verdict already shows YOU WIN / DRAW / NAME WINS
           },
           onScore: (p1, p2) => this.ui.setScore(p1, p2),
           onMatchOver: (ev) => {
