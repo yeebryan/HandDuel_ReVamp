@@ -1456,6 +1456,10 @@ body {
   .hud-round {
     font-size: var(--text-xs);
     letter-spacing: 0.04em;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    flex: none;
   }
 
   .hud-score-name {
