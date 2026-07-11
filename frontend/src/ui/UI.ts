@@ -138,6 +138,13 @@ export class UI {
           In Player vs CPU, one loss ends your run. Submit your name to the global leaderboard.
         </div>
       </li>
+      <li>
+        <div class="htp-icon">🏆</div>
+        <div class="htp-text">
+          <strong>Online: First to 2 wins</strong>
+          In PvP Online, the first player to win 2 rounds takes the match. Draws don't count for either side.
+        </div>
+      </li>
     </ol>
     <button class="submit-btn" id="how-to-play-close">Got it</button>
   </div>
