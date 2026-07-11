@@ -826,6 +826,12 @@ export class UI {
   // ─── Side-by-side reveal panel ────────────────
 
   showRevealPanel(p1g: Gesture, p2g: Gesture, winner: 0 | 1 | 2, p2Label = 'CPU'): void {
+    // Always clear SHOOT! before the reveal — PvP online has no phase-change
+    // event to do this, so it must happen here in all modes
+    this.countdownEl.classList.add('hidden');
+    this.countdownEl.textContent = '';
+    this.countdownEl.classList.remove('show-phase');
+
     this.revealP1Emoji.textContent = GESTURE_EMOJI[p1g] ?? '?';
     this.revealP2Emoji.textContent = GESTURE_EMOJI[p2g] ?? '?';
     (this.root.querySelector('#reveal-p1-label') as HTMLElement).textContent =
@@ -842,7 +848,7 @@ export class UI {
     const verdict =
       winner === 0 ? 'DRAW' :
       winner === 1 ? 'YOU WIN' :
-                     'CPU WINS';
+                     `${p2Label} WINS`;
     verdictEl.textContent = verdict;
     verdictEl.className = `reveal-verdict ${winner === 0 ? 'draw' : winner === 1 ? 'win' : 'lose'}`;
 
