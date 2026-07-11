@@ -5,6 +5,7 @@ import type { Gesture, RevealEvent, MatchOverEvent, LeaderboardEntry } from '../
 
 export interface PvPOnlineHandlers {
   onPhase: (phase: string, countdown?: number) => void;
+  onMatched?: (opponentName: string) => void;
   onResult: (p1g: Gesture, p2g: Gesture, winner: 0 | 1 | 2) => void;
   onScore: (p1: number, p2: number) => void;
   onMatchOver: (ev: MatchOverEvent) => void;
@@ -40,6 +41,7 @@ export class PvPOnlineMode {
     this.socket.on(`${prefix}:matched` as 'comp:matched', (ev) => {
       this.roomId = ev.roomId;
       this.playerSide = ev.playerSide;
+      this.handlers.onMatched?.(ev.opponentName ?? 'Opponent');
       this.handlers.onPhase('matched');
     });
 

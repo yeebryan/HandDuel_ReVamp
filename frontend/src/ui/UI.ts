@@ -222,10 +222,17 @@ export class UI {
   <div class="modal-box lb-modal">
     <h2 id="leaderboard-title">🔥 Top Streaks</h2>
     <div class="lb-subtitle" id="leaderboard-subtitle">Player vs CPU</div>
+    <div class="lb-tabs hidden" id="lb-tabs">
+      <button class="lb-tab active" data-tab="pvc">🔥 PvC</button>
+      <button class="lb-tab" data-tab="online">🏆 Online</button>
+    </div>
     <div id="leaderboard-list"></div>
     <button class="submit-btn ghost" id="leaderboard-close">Close</button>
   </div>
 </div>
+
+<!-- Toast notification (join alerts etc.) -->
+<div id="toast" class="hidden"></div>
 
 <!-- Name entry modal -->
 <div id="name-modal" class="hidden">
@@ -488,6 +495,17 @@ export class UI {
     const ring = this.root.querySelector('#countdown-ring') as HTMLElement | null;
     const isShow = v === 0 || v === '0';
 
+    // Empty string = clear/hide — display:none beats min-height and any
+    // in-flight Anime.js animation that would otherwise keep SHOOT! visible
+    if (v === '') {
+      el.textContent = '';
+      el.classList.remove('show-phase');
+      el.classList.add('hidden');
+      return;
+    }
+
+    el.classList.remove('hidden');
+
     if (isShow) {
       el.textContent = 'SHOOT!';
       el.classList.add('show-phase');
@@ -512,7 +530,10 @@ export class UI {
     el.textContent = label;
     el.className = `result-display ${type}`;
     el.classList.remove('hidden');
-    this.setCountdown('');
+    // Hide the countdown completely so SHOOT! can't overlap the result text
+    this.countdownEl.classList.add('hidden');
+    this.countdownEl.textContent = '';
+    this.countdownEl.classList.remove('show-phase');
     // Anime.js drives the entrance (CSS class sets colour + glow, not animation)
     animateResultIn(el, type);
   }
@@ -595,28 +616,71 @@ export class UI {
     this.show(this.leaderboard);
     const subtitleEl = this.root.querySelector('#leaderboard-subtitle') as HTMLElement;
     if (subtitleEl) subtitleEl.textContent = subtitle;
+    this.renderLeaderboardList(entries, currentName);
+  }
+
+  showLeaderboardWithTabs(
+    pvcEntries: LeaderboardEntry[],
+    onlineEntries: LeaderboardEntry[],
+    currentName = '',
+  ): void {
+    this.show(this.leaderboard);
+    const titleEl    = this.root.querySelector('#leaderboard-title') as HTMLElement;
+    const subtitleEl = this.root.querySelector('#leaderboard-subtitle') as HTMLElement;
+    const tabsEl     = this.root.querySelector('#lb-tabs') as HTMLElement;
+
+    titleEl.textContent = '🏆 Leaderboard';
+    subtitleEl.classList.add('hidden');
+    tabsEl.classList.remove('hidden');
+
+    const renderTab = (tab: 'pvc' | 'online') => {
+      this.renderLeaderboardList(tab === 'pvc' ? pvcEntries : onlineEntries, currentName);
+      tabsEl.querySelectorAll<HTMLElement>('.lb-tab').forEach((btn) =>
+        btn.classList.toggle('active', btn.dataset['tab'] === tab),
+      );
+    };
+
+    renderTab('pvc');
+    tabsEl.querySelectorAll<HTMLButtonElement>('.lb-tab').forEach((btn) => {
+      btn.onclick = () => renderTab(btn.dataset['tab'] as 'pvc' | 'online');
+    });
+  }
+
+  private renderLeaderboardList(entries: LeaderboardEntry[], currentName: string): void {
     const list = this.root.querySelector('#leaderboard-list')!;
+    list.innerHTML = '';
 
     if (entries.length === 0) {
-      list.innerHTML = `
-        <div class="lb-empty">
-          <strong>No streaks yet</strong>
-          Be the first to set a record 🔥
-        </div>`;
+      const empty = document.createElement('div');
+      empty.className = 'lb-empty';
+      const strong = document.createElement('strong');
+      strong.textContent = 'No streaks yet';
+      empty.appendChild(strong);
+      empty.appendChild(document.createTextNode(' Be the first to set a record 🔥'));
+      list.appendChild(empty);
       return;
     }
 
-    list.innerHTML = entries
-      .slice(0, 8)
-      .map(
-        (e, i) => `
-        <div class="lb-entry${e.name === currentName ? ' current-player' : ''}">
-          <span class="lb-rank">${i + 1}</span>
-          <span class="lb-name">${this.escape(e.name)}</span>
-          <span class="lb-streak" title="Best streak">${e.consecutiveWins}🔥</span>
-        </div>`
-      )
-      .join('');
+    entries.slice(0, 8).forEach((e, i) => {
+      const row = document.createElement('div');
+      row.className = 'lb-entry' + (e.name === currentName ? ' current-player' : '');
+
+      const rank = document.createElement('span');
+      rank.className = 'lb-rank';
+      rank.textContent = String(i + 1);
+
+      const name = document.createElement('span');
+      name.className = 'lb-name';
+      name.textContent = e.name;
+
+      const streak = document.createElement('span');
+      streak.className = 'lb-streak';
+      streak.title = 'Best streak';
+      streak.textContent = `${e.consecutiveWins}🔥`;
+
+      row.append(rank, name, streak);
+      list.appendChild(row);
+    });
   }
 
   /** Shows the leaderboard modal immediately with a loading spinner —
@@ -634,7 +698,31 @@ export class UI {
       </div>`;
   }
 
-  hideLeaderboard(): void { this.hide(this.leaderboard); }
+  hideLeaderboard(): void {
+    this.hide(this.leaderboard);
+    // Reset tab state so non-tabbed in-game leaderboard popup is clean
+    const subtitleEl = this.root.querySelector('#leaderboard-subtitle') as HTMLElement;
+    subtitleEl.classList.remove('hidden');
+    const tabsEl = this.root.querySelector('#lb-tabs') as HTMLElement;
+    tabsEl.classList.add('hidden');
+    const titleEl = this.root.querySelector('#leaderboard-title') as HTMLElement;
+    titleEl.textContent = '🔥 Top Streaks';
+  }
+
+  private _toastTimer?: ReturnType<typeof setTimeout>;
+
+  showToast(message: string, durationMs = 2500): void {
+    const el = this.root.querySelector('#toast') as HTMLElement;
+    el.textContent = message;
+    el.classList.remove('hidden', 'toast-fade');
+    // Restart CSS animation
+    void el.offsetHeight;
+    clearTimeout(this._toastTimer);
+    this._toastTimer = setTimeout(() => {
+      el.classList.add('toast-fade');
+      setTimeout(() => el.classList.add('hidden'), 400);
+    }, durationMs);
+  }
 
   onLeaderboardClose(cb: () => void): void {
     this.root.querySelector('#leaderboard-close')!.addEventListener('click', cb);
@@ -770,7 +858,4 @@ export class UI {
   private show(el: HTMLElement): void  { el.classList.remove('hidden'); }
   private hide(el: HTMLElement): void  { el.classList.add('hidden'); }
 
-  private escape(s: string): string {
-    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  }
 }
