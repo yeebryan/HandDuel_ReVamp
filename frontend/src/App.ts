@@ -364,6 +364,9 @@ export class App {
     ctx?.clearRect(0, 0, this.landmarkCanvas.width, this.landmarkCanvas.height);
     this.ui.updateHoldRing(0, null);
     this.ui.setCPUGesture('❓', '');
+    this.ui.setScore(0, 0);
+    this.ui.setStreak(0);
+    this.ui.setRound(1);
     this.ui.hideLeaderboard();
     this.ui.hideConnecting();
     this.ui.hideGameStartCue();
