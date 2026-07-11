@@ -93,7 +93,7 @@ export class UI {
       <div class="mode-name">Local PvP</div>
       <div class="mode-desc">Left hand vs Right hand</div>
     </button>
-    <button class="mode-btn mode-hidden" data-mode="pvp-online" aria-hidden="true" tabindex="-1">
+    <button class="mode-btn" data-mode="pvp-online">
       <div class="mode-icon">${ICON_CROWN}</div>
       <div class="mode-name">Competition</div>
       <div class="mode-desc">Online · streak leaderboard</div>

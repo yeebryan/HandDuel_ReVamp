@@ -420,10 +420,10 @@ body {
   perspective: 1000px;
 }
 
-/* When PvP buttons are hidden, centre the single PvC card */
+/* One hidden button → 2 visible cards side by side */
 .mode-grid:has(.mode-hidden) {
-  grid-template-columns: 1fr;
-  max-width: 360px;
+  grid-template-columns: repeat(2, 1fr);
+  max-width: 520px;
 }
 
 .mode-btn {
@@ -1380,8 +1380,9 @@ body {
     width: 88%;
   }
 
-  /* Single visible card fills nicely on mobile */
+  /* Two visible cards stack to single column on mobile */
   .mode-grid:has(.mode-hidden) {
+    grid-template-columns: 1fr;
     max-width: 320px;
   }
 
