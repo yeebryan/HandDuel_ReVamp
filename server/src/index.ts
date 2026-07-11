@@ -7,6 +7,7 @@ import { rateLimit } from 'express-rate-limit';
 import { GameRoom } from './GameRoom.js';
 import { OnlineLeaderboard } from './OnlineLeaderboard.js';
 import { PvCLeaderboard } from './PvCLeaderboard.js';
+import { filterProfanity } from './profanity.js';
 
 const PORT = Number(process.env['PORT'] ?? 3001);
 const CLIENT_ORIGIN = process.env['CLIENT_ORIGIN'] ?? 'http://localhost:5173';
@@ -125,7 +126,7 @@ function tryMatch(
 // ── Helpers ────────────────────────────────────────────────────────────────
 function sanitiseName(raw: unknown): string {
   if (typeof raw !== 'string') return 'Anon';
-  const trimmed = raw.trim().slice(0, 20);
+  const trimmed = filterProfanity(raw.trim()).slice(0, 20);
   return trimmed.length > 0 ? trimmed : 'Anon';
 }
 
