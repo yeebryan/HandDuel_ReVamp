@@ -33,8 +33,8 @@ export class PvPOnlineMode {
     this.socket = new SocketClient();
   }
 
-  async connect(playerName: string): Promise<void> {
-    await this.socket.connect();
+  async connect(playerName: string, onRetry?: (attempt: number) => void): Promise<void> {
+    await this.socket.connect(onRetry);
 
     const prefix = this.variant === 'competition' ? 'comp' : 'casual';
 

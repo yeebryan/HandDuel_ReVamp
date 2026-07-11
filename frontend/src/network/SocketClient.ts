@@ -35,16 +35,27 @@ export class SocketClient {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private socket: Socket<any, any> | null = null;
 
-  connect(): Promise<void> {
+  connect(onRetry?: (attempt: number) => void): Promise<void> {
     return new Promise((resolve, reject) => {
       this.socket = io(SERVER_URL, {
         transports: ['websocket'],
-        reconnectionAttempts: 3,
-        timeout: 8000,
+        reconnectionAttempts: 4,
+        reconnectionDelay: 2000,
+        reconnectionDelayMax: 5000,
+        // 70s covers Render free-tier cold start (up to ~50s)
+        timeout: 70_000,
       });
 
+      let attempt = 0;
       this.socket.once('connect', resolve);
-      this.socket.once('connect_error', reject);
+      this.socket.on('connect_error', () => {
+        attempt++;
+        if (attempt >= 4) {
+          reject(new Error('Could not connect after retries'));
+        } else {
+          onRetry?.(attempt);
+        }
+      });
     });
   }
 
