@@ -271,11 +271,17 @@ export class App {
       this.activeMode = onlineMode;
 
       try {
-        await onlineMode.connect(playerName);
+        await onlineMode.connect(playerName, (attempt) => {
+          this.ui.showConnecting(
+            attempt === 1
+              ? 'Waking up server… (first visit may take ~30s)'
+              : `Retrying… (attempt ${attempt + 1})`,
+          );
+        });
         trackGameStarted('pvp-online');
       } catch {
         this.ui.hideConnecting();
-        this.ui.setPhaseHint('Could not connect to server');
+        this.ui.setPhaseHint('Could not connect — server may be down, try again');
       }
     }
   }
