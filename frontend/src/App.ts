@@ -205,12 +205,11 @@ export class App {
           onMatched: (name) => {
             opponentName = name;
             this.ui.setP2Name(name);
-            this.ui.showToast(`${name} has joined the game`);
+            this.ui.showToast(`${name} has joined · First to 2 wins!`, 4000);
           },
           onPhase: (phase, cd) => {
             if (phase === 'matched') {
               this.ui.hideConnecting();
-              this.ui.setPhaseHint('First to 2 wins! Hold a gesture to ready up.');
             } else if (phase === 'waiting') {
               this.ui.showConnecting('Finding opponent…');
             } else {
