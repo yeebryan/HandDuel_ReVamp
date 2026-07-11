@@ -198,13 +198,11 @@ export class App {
       this.ui.setCPUPanelVisible(false);
       this.ui.showConnecting('Connecting to server…');
 
-      let matchStarted = false;
       let opponentName = 'OPPONENT';
       const onlineMode = new PvPOnlineMode(
         this.scene, this.detector, this.p1Video,
         {
           onMatched: (name) => {
-            matchStarted = true;
             opponentName = name;
             this.ui.setP2Name(name);
             this.ui.showToast(`${name} has joined the game`);
@@ -249,13 +247,7 @@ export class App {
             // #4 — removed dead setTimeout(stop) that "re-queued winner".
             // returnToMenu in handleMatchOver already calls activeMode.stop().
           },
-          onLeaderboard: (entries) => {
-            // Only show during matchmaking (waiting for opponent).
-            // Once matched, the game is in progress — popping the leaderboard
-            // would block gameplay.
-            if (matchStarted || entries.length === 0) return;
-            this.ui.showLeaderboard(entries, playerName, 'Online Competition');
-          },
+          onLeaderboard: (_entries) => { /* never pop leaderboard mid-session */ },
           onDisconnected: () => {
             this.ui.setPhaseHint('Opponent disconnected');
             setTimeout(() => this.returnToMenu(), 2000);
@@ -314,6 +306,7 @@ export class App {
 
   private handleMatchOver(msg: string, type: 'win' | 'lose' | 'draw' = 'win'): void {
     this.ui.setCountdown('');
+    this.ui.hideRevealPanel();
     this.ui.showResult(msg, type);
     this.ui.setPhaseHint('Returning to menu…');
     setTimeout(() => this.returnToMenu(), 3500);
