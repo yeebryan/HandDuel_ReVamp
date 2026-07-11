@@ -122,14 +122,22 @@ function tryMatch(
   room.start();
 }
 
+// ── Helpers ────────────────────────────────────────────────────────────────
+function sanitiseName(raw: unknown): string {
+  if (typeof raw !== 'string') return 'Anon';
+  const trimmed = raw.trim().slice(0, 20);
+  return trimmed.length > 0 ? trimmed : 'Anon';
+}
+
 // ── Socket handlers ────────────────────────────────────────────────────────
 io.on('connection', (socket) => {
   console.log(`[+] ${socket.id}`);
 
   // Competition
-  socket.on('comp:join', ({ name }: { name: string }) => {
-    leaderboard.upsert(name);
-    compQueue.push({ socketId: socket.id, name });
+  socket.on('comp:join', ({ name }: { name: unknown }) => {
+    const safeName = sanitiseName(name);
+    leaderboard.upsert(safeName);
+    compQueue.push({ socketId: socket.id, name: safeName });
     socket.emit('comp:waiting', {});
     tryMatch(compQueue, 'comp');
     broadcastLeaderboard();
@@ -151,8 +159,9 @@ io.on('connection', (socket) => {
   });
 
   // Casual PvP
-  socket.on('casual:join', ({ name }: { name: string }) => {
-    casualQueue.push({ socketId: socket.id, name });
+  socket.on('casual:join', ({ name }: { name: unknown }) => {
+    const safeName = sanitiseName(name);
+    casualQueue.push({ socketId: socket.id, name: safeName });
     socket.emit('casual:waiting', {});
     tryMatch(casualQueue, 'casual');
   });

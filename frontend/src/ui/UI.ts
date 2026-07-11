@@ -88,12 +88,12 @@ export class UI {
       <div class="mode-name">Player vs CPU</div>
       <div class="mode-desc">Challenge the machine</div>
     </button>
-    <button class="mode-btn" data-mode="pvp-local">
+    <button class="mode-btn mode-hidden" data-mode="pvp-local" aria-hidden="true" tabindex="-1">
       <div class="mode-icon">${ICON_DUEL}</div>
       <div class="mode-name">Local PvP</div>
       <div class="mode-desc">Left hand vs Right hand</div>
     </button>
-    <button class="mode-btn" data-mode="pvp-online">
+    <button class="mode-btn mode-hidden" data-mode="pvp-online" aria-hidden="true" tabindex="-1">
       <div class="mode-icon">${ICON_CROWN}</div>
       <div class="mode-name">Competition</div>
       <div class="mode-desc">Online · streak leaderboard</div>
