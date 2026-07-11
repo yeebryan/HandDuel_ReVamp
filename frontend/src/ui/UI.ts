@@ -146,9 +146,8 @@ export class UI {
 <!-- Game HUD -->
 <div id="game-hud" class="screen hidden">
 
-  <!-- Top bar: back button + scores + round -->
+  <!-- Top bar: scores only -->
   <div class="hud-topbar">
-    <button class="back-btn" id="back-btn">← Menu</button>
     <div class="hud-score-block">
       <span class="hud-score-name" id="p1-name">YOU</span>
       <span class="hud-score-val p1" id="p1-score">0</span>
@@ -200,8 +199,9 @@ export class UI {
     <div class="reveal-verdict" id="reveal-verdict"></div>
   </div>
 
-  <!-- Bottom bar: hold ring + gesture pill + status hint -->
+  <!-- Bottom bar: menu + hold ring + gesture pill + status hint -->
   <div class="hud-bottombar">
+    <button class="back-btn" id="back-btn">← Menu</button>
     <div id="hold-ring-wrap">
       <svg class="hold-ring-svg" viewBox="0 0 50 50">
         <circle cx="25" cy="25" r="22" class="hold-ring-track"/>

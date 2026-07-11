@@ -610,7 +610,7 @@ body {
   text-align: center;
 }
 
-/* ── Back button (inside topbar) ───────────────── */
+/* ── Back button (inside bottombar) ────────────── */
 .back-btn {
   background: transparent;
   border: 1px solid var(--color-border);
@@ -781,6 +781,8 @@ body {
   z-index: 1;
   /* entrance driven by Anime.js animateCountdownTick() */
 }
+/* Collapse layout space entirely so SHOOT! can't ghost behind reveal panel */
+.countdown-display.hidden { min-height: 0 !important; }
 
 .countdown-display.show-phase {
   color: var(--color-accent);
