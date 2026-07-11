@@ -83,3 +83,21 @@ export async function fetchTop(): Promise<PvCEntry[]> {
     return [];
   }
 }
+
+export interface OnlineEntry {
+  name: string;
+  consecutiveWins: number;
+  bestStreak: number;
+  totalWins: number;
+}
+
+export async function fetchOnlineTop(): Promise<OnlineEntry[]> {
+  try {
+    const res = await fetchWithTimeout(`${SERVER_URL}/leaderboard`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return (await res.json()) as OnlineEntry[];
+  } catch (err) {
+    console.warn('[PvCApi] fetchOnlineTop failed', err);
+    return [];
+  }
+}

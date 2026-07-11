@@ -4,7 +4,7 @@ import { UI } from './ui/UI.js';
 import { PvCMode } from './modes/PvCMode.js';
 import { PvPLocalMode } from './modes/PvPLocalMode.js';
 import { PvPOnlineMode } from './modes/PvPOnlineMode.js';
-import { submitStreak, fetchTop, flushQueue, type PvCEntry } from './network/PvCApi.js';
+import { submitStreak, fetchTop, fetchOnlineTop, flushQueue, type PvCEntry } from './network/PvCApi.js';
 import type { GameMode } from './types.js';
 import {
   trackAppLoaded,
@@ -198,9 +198,14 @@ export class App {
       this.ui.setCPUPanelVisible(false);
       this.ui.showConnecting('Connecting to server…');
 
+      let matchStarted = false;
       const onlineMode = new PvPOnlineMode(
         this.scene, this.detector, this.p1Video,
         {
+          onMatched: (opponentName) => {
+            matchStarted = true;
+            this.ui.showToast(`${opponentName} has joined the game`);
+          },
           onPhase: (phase, cd) => {
             if (phase === 'matched') {
               this.ui.hideConnecting();
@@ -242,9 +247,10 @@ export class App {
             // returnToMenu in handleMatchOver already calls activeMode.stop().
           },
           onLeaderboard: (entries) => {
-            // Don't pop the leaderboard mid-matchmaking if there's nothing
-            // to show — empty list is just noise and obscures "Finding opponent…"
-            if (entries.length === 0) return;
+            // Only show during matchmaking (waiting for opponent).
+            // Once matched, the game is in progress — popping the leaderboard
+            // would block gameplay.
+            if (matchStarted || entries.length === 0) return;
             this.ui.showLeaderboard(entries, playerName, 'Online Competition');
           },
           onDisconnected: () => {
@@ -305,18 +311,16 @@ export class App {
   }
 
   private async viewPvCLeaderboard(): Promise<void> {
-    // Show the modal immediately with a spinner so the user gets feedback
-    // even when the server is cold-starting (up to ~50s on Render free tier).
     trackLeaderboardViewed('pvc');
     this.ui.showLeaderboardLoading();
-    const top = await fetchTop();
-    const adapted = top.map((e: PvCEntry) => ({
+    const [pvcTop, onlineTop] = await Promise.all([fetchTop(), fetchOnlineTop()]);
+    const pvcAdapted = pvcTop.map((e: PvCEntry) => ({
       name: e.name,
       consecutiveWins: e.streak,
       bestStreak: e.streak,
       totalWins: e.streak,
     }));
-    this.ui.showLeaderboard(adapted, '');
+    this.ui.showLeaderboardWithTabs(pvcAdapted, onlineTop);
   }
 
   private async handlePvCGameOver(streak: number): Promise<void> {
