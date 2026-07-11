@@ -6,6 +6,16 @@ import { PvPLocalMode } from './modes/PvPLocalMode.js';
 import { PvPOnlineMode } from './modes/PvPOnlineMode.js';
 import { submitStreak, fetchTop, flushQueue, type PvCEntry } from './network/PvCApi.js';
 import type { GameMode } from './types.js';
+import {
+  trackAppLoaded,
+  trackCameraGranted,
+  trackModeSelected,
+  trackGameStarted,
+  trackRoundPlayed,
+  trackGameOver,
+  trackStreakSubmitted,
+  trackLeaderboardViewed,
+} from './analytics.js';
 
 export class App {
   private scene!: GameScene;
@@ -38,6 +48,7 @@ export class App {
     // care about the result.
     void flushQueue();
     this.ui.initModeSelectHover();
+    trackAppLoaded();
 
     // Boot MediaPipe first (no camera needed yet — user hasn't clicked anything)
     this.ui.setLoadingStatus('Loading gesture detection…');
@@ -66,6 +77,7 @@ export class App {
       },
       (stream) => {
         // Camera granted — attach stream and proceed to mode select
+        trackCameraGranted();
         this.p1Video.srcObject = stream;
         this.p1Video.play().catch(console.warn);
         setTimeout(() => this.ui.showModeSelect(), 300);
@@ -75,6 +87,7 @@ export class App {
 
   private async startMode(mode: GameMode): Promise<void> {
     this.roundCount = 0;
+    trackModeSelected(mode);
 
     if (mode === 'pvc') {
       this.ui.showGameHud('YOU', 'CPU');
@@ -84,6 +97,7 @@ export class App {
         {
           onPhase: (phase, cd) => this.handlePhase(phase, cd),
           onResult: (p1g, p2g, winner) => {
+            trackRoundPlayed('pvc', winner);
             this.ui.flashScreen();
             if (winner === 1) this.ui.pulseScore(1);
             else if (winner === 2) this.ui.pulseScore(2);
@@ -121,6 +135,7 @@ export class App {
         }
       );
       (this.activeMode as PvCMode).start();
+      trackGameStarted('pvc');
 
     } else if (mode === 'pvp-local') {
       this.ui.showGameHud('PLAYER 1', 'PLAYER 2');
@@ -141,6 +156,7 @@ export class App {
             if (phase !== 'show') this.ui.setPhaseHint(persistentHint);
           },
           onResult: (p1g, p2g, winner) => {
+            trackRoundPlayed('pvp-local', winner);
             this.ui.flashScreen();
             if (winner === 1) this.ui.pulseScore(1);
             else if (winner === 2) this.ui.pulseScore(2);
@@ -168,6 +184,7 @@ export class App {
         }
       );
       (this.activeMode as PvPLocalMode).start();
+      trackGameStarted('pvp-local');
 
     } else if (mode === 'pvp-online') {
       const playerName = await this.ui.promptName();
@@ -195,6 +212,7 @@ export class App {
             }
           },
           onResult: (p1g, p2g, winner) => {
+            trackRoundPlayed('pvp-online', winner);
             this.roundCount++;
             this.ui.setRound(this.roundCount + 1);
             this.ui.flashScreen();
@@ -245,6 +263,7 @@ export class App {
 
       try {
         await onlineMode.connect(playerName);
+        trackGameStarted('pvp-online');
       } catch {
         this.ui.hideConnecting();
         this.ui.setPhaseHint('Could not connect to server');
@@ -288,6 +307,7 @@ export class App {
   private async viewPvCLeaderboard(): Promise<void> {
     // Show the modal immediately with a spinner so the user gets feedback
     // even when the server is cold-starting (up to ~50s on Render free tier).
+    trackLeaderboardViewed('pvc');
     this.ui.showLeaderboardLoading();
     const top = await fetchTop();
     const adapted = top.map((e: PvCEntry) => ({
@@ -300,6 +320,7 @@ export class App {
   }
 
   private async handlePvCGameOver(streak: number): Promise<void> {
+    trackGameOver(streak);
     // Let the reveal panel show "CPU WINS" cleanly for a beat,
     // then dismiss it before showing the Game Over modal — avoids the
     // overlapping text that happened when both rendered together.
@@ -314,7 +335,10 @@ export class App {
       const name = await this.ui.promptName();
       // Cancel = don't save to leaderboard, but still flow through to
       // Game Over modal so the player can replay or quit.
-      if (name !== null) submitStreak(name, streak);
+      if (name !== null) {
+        trackStreakSubmitted(streak);
+        submitStreak(name, streak);
+      }
     }
 
     // Ask: play again, or back to menu?
