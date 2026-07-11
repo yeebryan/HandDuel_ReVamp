@@ -469,6 +469,10 @@ export class UI {
 
   // ─── HUD updates ─────────────────────────────
 
+  setP2Name(name: string): void {
+    this.p2NameEl.textContent = name;
+  }
+
   setScore(p1: number, p2: number): void {
     this.p1ScoreEl.textContent = String(p1);
     this.p2ScoreEl.textContent = String(p2);
@@ -826,6 +830,11 @@ export class UI {
   // ─── Side-by-side reveal panel ────────────────
 
   showRevealPanel(p1g: Gesture, p2g: Gesture, winner: 0 | 1 | 2, p2Label = 'CPU'): void {
+    // Clear SHOOT! regardless of which mode triggered reveal (PvP Online has no phase-change)
+    this.countdownEl.classList.add('hidden');
+    this.countdownEl.textContent = '';
+    this.countdownEl.classList.remove('show-phase');
+
     this.revealP1Emoji.textContent = GESTURE_EMOJI[p1g] ?? '?';
     this.revealP2Emoji.textContent = GESTURE_EMOJI[p2g] ?? '?';
     (this.root.querySelector('#reveal-p1-label') as HTMLElement).textContent =
@@ -842,7 +851,7 @@ export class UI {
     const verdict =
       winner === 0 ? 'DRAW' :
       winner === 1 ? 'YOU WIN' :
-                     'CPU WINS';
+                     `${p2Label} WINS`;
     verdictEl.textContent = verdict;
     verdictEl.className = `reveal-verdict ${winner === 0 ? 'draw' : winner === 1 ? 'win' : 'lose'}`;
 

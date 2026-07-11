@@ -199,12 +199,15 @@ export class App {
       this.ui.showConnecting('Connecting to server…');
 
       let matchStarted = false;
+      let opponentName = 'OPPONENT';
       const onlineMode = new PvPOnlineMode(
         this.scene, this.detector, this.p1Video,
         {
-          onMatched: (opponentName) => {
+          onMatched: (name) => {
             matchStarted = true;
-            this.ui.showToast(`${opponentName} has joined the game`);
+            opponentName = name;
+            this.ui.setP2Name(name);
+            this.ui.showToast(`${name} has joined the game`);
           },
           onPhase: (phase, cd) => {
             if (phase === 'matched') {
@@ -229,7 +232,7 @@ export class App {
               this.ui.hideLockedIn();
               // #1 — label opponent as "OPPONENT" (real names not exchanged
               // by current server protocol)
-              this.ui.showRevealPanel(p1g, p2g, winner, 'OPPONENT');
+              this.ui.showRevealPanel(p1g, p2g, winner, opponentName);
             }, 600);
             const label = winner === 0 ? 'DRAW!' : winner === 1 ? 'YOU WIN!' : 'YOU LOSE!';
             const type  = winner === 0 ? 'draw' : winner === 1 ? 'win' : 'lose';
