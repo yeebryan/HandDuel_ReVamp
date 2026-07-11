@@ -5,7 +5,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import { rateLimit } from 'express-rate-limit';
 import { GameRoom } from './GameRoom.js';
-import { Leaderboard } from './Leaderboard.js';
+import { OnlineLeaderboard } from './OnlineLeaderboard.js';
 import { PvCLeaderboard } from './PvCLeaderboard.js';
 
 const PORT = Number(process.env['PORT'] ?? 3001);
@@ -42,7 +42,7 @@ app.get('/health', async (_req, res) => {
   }
 });
 
-app.get('/leaderboard', (_req, res) => res.json(leaderboard.getTop(20)));
+app.get('/leaderboard', async (_req, res) => res.json(await leaderboard.getTop(20)));
 app.get('/leaderboard/pvc', async (_req, res) => {
   await pvcLeaderboard.whenReady();
   res.json(await pvcLeaderboard.getTop(20));
@@ -83,7 +83,7 @@ const io = new Server(httpServer, {
 });
 
 // ── State ──────────────────────────────────────────────────────────────────
-const leaderboard = new Leaderboard();
+const leaderboard = new OnlineLeaderboard();
 const rooms       = new Map<string, GameRoom>();
 
 // Queue: { socketId, name }
@@ -93,8 +93,8 @@ const casualQueue: Array<{ socketId: string; name: string }> = [];
 let roomCounter = 0;
 function nextRoomId() { return `room-${++roomCounter}`; }
 
-function broadcastLeaderboard(): void {
-  io.emit('comp:leaderboard', { entries: leaderboard.getTop(10) });
+async function broadcastLeaderboard(): Promise<void> {
+  io.emit('comp:leaderboard', { entries: await leaderboard.getTop(10) });
 }
 
 // ── Matchmaking ────────────────────────────────────────────────────────────
@@ -114,7 +114,7 @@ function tryMatch(
     ns === 'comp' ? leaderboard : null,
     (id) => {
       rooms.delete(id);
-      if (ns === 'comp') broadcastLeaderboard();
+      if (ns === 'comp') void broadcastLeaderboard();
     },
   );
 
@@ -136,11 +136,11 @@ io.on('connection', (socket) => {
   // Competition
   socket.on('comp:join', ({ name }: { name: unknown }) => {
     const safeName = sanitiseName(name);
-    leaderboard.upsert(safeName);
+    void leaderboard.upsert(safeName);
     compQueue.push({ socketId: socket.id, name: safeName });
     socket.emit('comp:waiting', {});
     tryMatch(compQueue, 'comp');
-    broadcastLeaderboard();
+    void broadcastLeaderboard();
   });
 
   socket.on('comp:gesture', ({ roomId, gesture }: { roomId: string; gesture: string }) => {

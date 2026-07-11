@@ -1,5 +1,5 @@
-import type { Server, Socket } from 'socket.io';
-import type { Leaderboard } from './Leaderboard.js';
+import type { Server } from 'socket.io';
+import type { OnlineLeaderboard } from './OnlineLeaderboard.js';
 
 type Gesture = 'rock' | 'paper' | 'scissors' | 'none';
 type RoundWinner = 0 | 1 | 2;
@@ -44,7 +44,7 @@ export class GameRoom {
     p2Socket: string, p2Name: string,
     private io: Server,
     private ns: string, // socket.io namespace prefix ('comp' | 'casual')
-    private leaderboard: Leaderboard | null,
+    private leaderboard: OnlineLeaderboard | null,
     private onGameOver: (roomId: string) => void,
   ) {
     this.id = id;
@@ -127,23 +127,23 @@ export class GameRoom {
 
     setTimeout(() => {
       if (this.p1.score >= WINS_NEEDED || this.p2.score >= WINS_NEEDED) {
-        this.endMatch();
+        void this.endMatch();
       } else {
         this.startRound();
       }
     }, 2500);
   }
 
-  private endMatch(): void {
+  private async endMatch(): Promise<void> {
     const matchWinner: 1 | 2 = this.p1.score >= WINS_NEEDED ? 1 : 2;
     const winnerPlayer = matchWinner === 1 ? this.p1 : this.p2;
     const loserPlayer  = matchWinner === 1 ? this.p2 : this.p1;
 
     if (this.leaderboard) {
-      this.leaderboard.recordWin(winnerPlayer.name);
-      this.leaderboard.resetStreak(loserPlayer.name);
-      const streak = this.leaderboard.getStreak(winnerPlayer.name);
-
+      const [streak] = await Promise.all([
+        this.leaderboard.recordWin(winnerPlayer.name),
+        this.leaderboard.resetStreak(loserPlayer.name),
+      ]);
       this.emit(`${this.ns}:match_over`, { winner: matchWinner, consecutiveWins: streak });
     } else {
       this.emit(`${this.ns}:match_over`, { winner: matchWinner, consecutiveWins: 0 });
@@ -157,10 +157,9 @@ export class GameRoom {
     const remainingSocket = socketId === this.p1.socketId ? this.p2.socketId : this.p1.socketId;
     this.io.to(remainingSocket).emit(`${this.ns}:opponent_disconnected`, {});
 
-    // Update leaderboard: disconnecting player loses streak
     if (this.leaderboard) {
       const disconnected = socketId === this.p1.socketId ? this.p1 : this.p2;
-      this.leaderboard.resetStreak(disconnected.name);
+      void this.leaderboard.resetStreak(disconnected.name);
     }
 
     this.onGameOver(this.id);
