@@ -196,6 +196,8 @@ export class App {
       this.ui.showGameStartCue();
       // #3 — no CPU in online PvP. Hold ring kept (player has to hold to ready).
       this.ui.setCPUPanelVisible(false);
+      // Best-of pips replace ROUND text — first-to-2 stays visible all match
+      this.ui.setDuelPips(0, 0);
       this.ui.showConnecting('Connecting to server…');
 
       let opponentName = 'OPPONENT';
@@ -219,7 +221,6 @@ export class App {
           onResult: (p1g, p2g, winner) => {
             trackRoundPlayed('pvp-online', winner);
             this.roundCount++;
-            this.ui.setRound(this.roundCount + 1);
             this.ui.flashScreen();
             if (winner === 1) this.ui.pulseScore(1);
             else if (winner === 2) this.ui.pulseScore(2);
@@ -233,7 +234,10 @@ export class App {
             }, 600);
             // Reveal panel verdict already shows YOU WIN / DRAW / NAME WINS
           },
-          onScore: (p1, p2) => this.ui.setScore(p1, p2),
+          onScore: (p1, p2) => {
+            this.ui.setScore(p1, p2);
+            this.ui.setDuelPips(p1, p2);
+          },
           onMatchOver: (ev) => {
             // #2 — show correct color for the per-player outcome
             const isWin = ev.winner === 1;
@@ -344,8 +348,17 @@ export class App {
       }
     }
 
+    // Personal best lives in localStorage so the badge survives sessions
+    const BEST_KEY = 'handduel.pvc.best';
+    let isPersonalBest = false;
+    try {
+      const prevBest = Number(localStorage.getItem(BEST_KEY) ?? 0);
+      isPersonalBest = streak > 0 && streak > prevBest;
+      if (isPersonalBest) localStorage.setItem(BEST_KEY, String(streak));
+    } catch { /* private mode — badge just won't show */ }
+
     // Ask: play again, or back to menu?
-    const choice = await this.ui.promptGameOver(streak);
+    const choice = await this.ui.promptGameOver(streak, isPersonalBest);
     if (choice === 'play-again') {
       // Reset HUD and restart the PvC run
       this.ui.setScore(0, 0);
