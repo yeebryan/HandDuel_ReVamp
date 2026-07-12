@@ -1,5 +1,12 @@
 import type { Gesture, LeaderboardEntry, GameMode } from '../types.js';
-import { ICON_CPU, ICON_DUEL, ICON_CROWN } from './icons.js';
+import {
+  ICON_DUEL,
+  ICON_GRADIENT_DEFS,
+  ICON_ROBOT_SOLID,
+  ICON_CROWN_SOLID,
+  ICON_FIRE,
+  ICON_TROPHY,
+} from './icons.js';
 import {
   animateModeSelectIn,
   attachIconHover,
@@ -58,6 +65,7 @@ export class UI {
 
   private buildHTML(): string {
     return `
+${ICON_GRADIENT_DEFS}
 <!-- Loading screen -->
 <div id="loading-screen">
   <div class="loading-title">HAND DUEL</div>
@@ -84,7 +92,7 @@ export class UI {
   <div class="game-subtitle">Rock · Paper · Scissors</div>
   <div class="mode-grid">
     <button class="mode-btn" data-mode="pvc">
-      <div class="mode-icon">${ICON_CPU}</div>
+      <div class="mode-icon">${ICON_ROBOT_SOLID}</div>
       <div class="mode-name">Player vs CPU</div>
       <div class="mode-desc">Challenge the machine</div>
     </button>
@@ -94,13 +102,13 @@ export class UI {
       <div class="mode-desc">Left hand vs Right hand</div>
     </button>
     <button class="mode-btn" data-mode="pvp-online">
-      <div class="mode-icon">${ICON_CROWN}</div>
+      <div class="mode-icon">${ICON_CROWN_SOLID}</div>
       <div class="mode-name">Competition</div>
       <div class="mode-desc">Online · streak leaderboard</div>
     </button>
   </div>
   <div class="mode-actions">
-    <button class="lb-view-btn" id="view-leaderboard-btn">🏆 View Leaderboard</button>
+    <button class="lb-view-btn" id="view-leaderboard-btn">${ICON_TROPHY} View Leaderboard</button>
     <button class="lb-view-btn" id="how-to-play-btn">ⓘ How to Play</button>
   </div>
 </div>
@@ -132,14 +140,14 @@ export class UI {
         </div>
       </li>
       <li>
-        <div class="htp-icon">🔥</div>
+        <div class="htp-icon">${ICON_FIRE}</div>
         <div class="htp-text">
           <strong>Build your streak</strong>
           In Player vs CPU, one loss ends your run. Submit your name to the global leaderboard.
         </div>
       </li>
       <li>
-        <div class="htp-icon">🏆</div>
+        <div class="htp-icon">${ICON_TROPHY}</div>
         <div class="htp-text">
           <strong>Online: First to 2 wins</strong>
           In PvP Online, the first player to win 2 rounds takes the match. Draws don't count for either side.
@@ -227,11 +235,11 @@ export class UI {
 <!-- Leaderboard (online competition + PvC view) -->
 <div id="leaderboard" class="hidden">
   <div class="modal-box lb-modal">
-    <h2 id="leaderboard-title">🔥 Top Streaks</h2>
+    <h2 id="leaderboard-title">${ICON_FIRE} Top Streaks</h2>
     <div class="lb-subtitle" id="leaderboard-subtitle">Player vs CPU</div>
     <div class="lb-tabs hidden" id="lb-tabs">
-      <button class="lb-tab active" data-tab="pvc">🔥 PvC</button>
-      <button class="lb-tab" data-tab="online">🏆 Online</button>
+      <button class="lb-tab active" data-tab="pvc">${ICON_FIRE} PvC</button>
+      <button class="lb-tab" data-tab="online">${ICON_TROPHY} Online</button>
     </div>
     <div id="leaderboard-list"></div>
     <button class="submit-btn ghost" id="leaderboard-close">Close</button>
@@ -498,7 +506,8 @@ export class UI {
   }
 
   setStreak(n: number): void {
-    this.roundEl.textContent = `STREAK ${n} 🔥`;
+    // n is always a game-controlled number, never user input — safe to build via innerHTML
+    this.roundEl.innerHTML = `STREAK ${n} <span class="icon-inline-sm">${ICON_FIRE}</span>`;
   }
 
   setCountdown(v: number | string): void {
@@ -640,7 +649,7 @@ export class UI {
     const subtitleEl = this.root.querySelector('#leaderboard-subtitle') as HTMLElement;
     const tabsEl     = this.root.querySelector('#lb-tabs') as HTMLElement;
 
-    titleEl.textContent = '🏆 Leaderboard';
+    titleEl.innerHTML = `${ICON_TROPHY} Leaderboard`; // static trusted string, no user input
     subtitleEl.classList.add('hidden');
     tabsEl.classList.remove('hidden');
 
@@ -667,7 +676,11 @@ export class UI {
       const strong = document.createElement('strong');
       strong.textContent = 'No streaks yet';
       empty.appendChild(strong);
-      empty.appendChild(document.createTextNode(' Be the first to set a record 🔥'));
+      const iconSpan = document.createElement('span');
+      iconSpan.className = 'icon-inline-sm';
+      iconSpan.innerHTML = ICON_FIRE; // static trusted markup, no user input
+      empty.appendChild(document.createTextNode(' Be the first to set a record '));
+      empty.appendChild(iconSpan);
       list.appendChild(empty);
       return;
     }
@@ -687,7 +700,8 @@ export class UI {
       const streak = document.createElement('span');
       streak.className = 'lb-streak';
       streak.title = 'Best streak';
-      streak.textContent = `${e.consecutiveWins}🔥`;
+      // consecutiveWins is a server-controlled number, never user text — safe via innerHTML
+      streak.innerHTML = `${e.consecutiveWins}<span class="icon-inline-sm">${ICON_FIRE}</span>`;
 
       row.append(rank, name, streak);
       list.appendChild(row);
@@ -717,7 +731,7 @@ export class UI {
     const tabsEl = this.root.querySelector('#lb-tabs') as HTMLElement;
     tabsEl.classList.add('hidden');
     const titleEl = this.root.querySelector('#leaderboard-title') as HTMLElement;
-    titleEl.textContent = '🔥 Top Streaks';
+    titleEl.innerHTML = `${ICON_FIRE} Top Streaks`; // static trusted string, no user input
   }
 
   private _toastTimer?: ReturnType<typeof setTimeout>;
