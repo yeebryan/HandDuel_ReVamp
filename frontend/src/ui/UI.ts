@@ -266,11 +266,33 @@ ${ICON_GRADIENT_DEFS}
 <!-- Game Over modal (PvC end-of-run) -->
 <div id="game-over-modal" class="hidden">
   <div class="modal-box game-over-box">
-    <h2 class="game-over-title">GAME OVER</h2>
-    <p class="game-over-streak" id="game-over-streak"></p>
+    <div class="go-flame-wrap" id="go-flame-wrap">
+      <div class="go-flame-glow"></div>
+      <svg class="go-flame-svg" width="96" height="110" viewBox="0 0 96 110" fill="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="go-fg" x1="48" y1="0" x2="48" y2="110" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#ffd54a"/>
+            <stop offset="0.45" stop-color="#ff9633"/>
+            <stop offset="1" stop-color="#ff5722"/>
+          </linearGradient>
+          <linearGradient id="go-fi" x1="48" y1="40" x2="48" y2="104" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#fff8d9"/>
+            <stop offset="1" stop-color="#ffc14a"/>
+          </linearGradient>
+        </defs>
+        <path d="M48 2c4 16-10 24-14 36-3 9-1 16 3 22-8-3-14-10-15-20C12 50 6 62 6 74c0 20 19 34 42 34s42-14 42-34c0-16-10-26-18-38-6-9-8-18-4-28-10 4-16 12-17 22C48 22 44 12 48 2z" fill="url(#go-fg)"/>
+        <path d="M48 46c2 10-6 15-8 22-1.5 5.5 0 10 3 13-5-1.5-8.5-5.5-9.5-11C30 74 27 80 27 87c0 12 9.5 19 21 19s21-7 21-19c0-9-5.5-14.5-10-21-3.5-5-4.5-10-2.5-16-5.5 2.5-8.5 7-9.5 13-1-6-2-12 1-17z" fill="url(#go-fi)"/>
+      </svg>
+    </div>
+    <div class="go-streak-num" id="go-streak-num">0</div>
+    <div class="go-streak-label" id="go-streak-label">WIN STREAK</div>
+    <div class="go-pb-badge hidden" id="go-pb-badge">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8L12 2z" fill="currentColor"/></svg>
+      NEW PERSONAL BEST
+    </div>
     <div class="game-over-actions">
-      <button class="submit-btn ghost" id="game-over-menu">← Back to Menu</button>
       <button class="submit-btn" id="game-over-restart">Play Again</button>
+      <button class="submit-btn ghost" id="game-over-menu">← Back to Menu</button>
     </div>
   </div>
 </div>
@@ -504,6 +526,33 @@ ${ICON_GRADIENT_DEFS}
 
   setRound(n: number): void {
     this.roundEl.textContent = `ROUND ${n}`;
+  }
+
+  /** Best-of pips for online duels — one dot per win needed, filled as
+   *  rounds are won. Replaces the ROUND text so "first to N" is always
+   *  visible instead of a toast that fades. */
+  setDuelPips(p1Wins: number, p2Wins: number, winsNeeded = 2): void {
+    this.roundEl.textContent = '';
+    const wrap = document.createElement('div');
+    wrap.className = 'duel-pips';
+
+    const makeGroup = (wins: number, cls: string) => {
+      const group = document.createElement('span');
+      group.className = 'pip-group';
+      for (let i = 0; i < winsNeeded; i++) {
+        const pip = document.createElement('i');
+        pip.className = i < wins ? `pip ${cls}` : 'pip';
+        group.append(pip);
+      }
+      return group;
+    };
+
+    const label = document.createElement('span');
+    label.className = 'pips-label';
+    label.textContent = `FIRST TO ${winsNeeded}`;
+
+    wrap.append(makeGroup(p1Wins, 'filled-p1'), label, makeGroup(p2Wins, 'filled-p2'));
+    this.roundEl.append(wrap);
   }
 
   setStreak(n: number): void {
@@ -791,15 +840,20 @@ ${ICON_GRADIENT_DEFS}
    * Show the Game Over modal and resolve with the user's choice.
    * Pass streak > 0 to display the streak summary.
    */
-  promptGameOver(streak: number): Promise<'play-again' | 'menu'> {
+  promptGameOver(streak: number, isPersonalBest = false): Promise<'play-again' | 'menu'> {
     const modal     = this.root.querySelector('#game-over-modal') as HTMLElement;
-    const streakEl  = this.root.querySelector('#game-over-streak') as HTMLElement;
+    const numEl     = this.root.querySelector('#go-streak-num') as HTMLElement;
+    const labelEl   = this.root.querySelector('#go-streak-label') as HTMLElement;
+    const pbBadge   = this.root.querySelector('#go-pb-badge') as HTMLElement;
+    const flameWrap = this.root.querySelector('#go-flame-wrap') as HTMLElement;
     const restartBtn = this.root.querySelector('#game-over-restart') as HTMLButtonElement;
     const menuBtn    = this.root.querySelector('#game-over-menu') as HTMLButtonElement;
 
-    streakEl.innerHTML = streak > 0
-      ? `Streak: <strong>${streak}</strong> 🔥`
-      : 'Better luck next time!';
+    numEl.textContent = String(streak);
+    labelEl.textContent = streak > 0 ? 'WIN STREAK' : 'BETTER LUCK NEXT TIME';
+    // Cold (grey) flame when the run ended with nothing to celebrate
+    flameWrap.classList.toggle('cold', streak === 0);
+    pbBadge.classList.toggle('hidden', !isPersonalBest);
 
     this.show(modal);
 
