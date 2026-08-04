@@ -465,6 +465,43 @@ body {
   outline-offset: 3px;
 }
 
+/* Permanently paused mode — visible so players know it existed and may
+   return, but inert: no hover lift, no glow, no click. */
+.mode-btn.mode-disabled {
+  position: relative;
+  cursor: not-allowed;
+  opacity: 0.45;
+  filter: grayscale(0.6);
+}
+.mode-btn.mode-disabled:hover,
+.mode-btn.mode-disabled:focus-visible {
+  transform: none;
+  background-color: var(--color-paper-2);
+  border-color: var(--color-border);
+  box-shadow: none;
+  outline: none;
+}
+.mode-btn.mode-disabled .mode-svg-solid,
+.mode-btn.mode-disabled:hover .mode-svg-solid {
+  filter: grayscale(1) drop-shadow(0 0 0 transparent);
+}
+
+.mode-paused-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--color-border-2);
+  color: var(--color-ink-2);
+  font-family: var(--font-body);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+
 /* Row of secondary buttons under the mode grid (Leaderboard + How to Play) */
 .mode-actions {
   margin-top: 32px;
