@@ -101,10 +101,11 @@ ${ICON_GRADIENT_DEFS}
       <div class="mode-name">Local PvP</div>
       <div class="mode-desc">Left hand vs Right hand</div>
     </button>
-    <button class="mode-btn" data-mode="pvp-online">
+    <button class="mode-btn mode-disabled" disabled aria-disabled="true">
+      <div class="mode-paused-badge">Paused</div>
       <div class="mode-icon">${ICON_CROWN_SOLID}</div>
       <div class="mode-name">Competition</div>
-      <div class="mode-desc">Online · streak leaderboard</div>
+      <div class="mode-desc">Online play is paused for now</div>
     </button>
   </div>
   <div class="mode-actions">
